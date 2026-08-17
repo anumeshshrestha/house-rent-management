@@ -29,39 +29,38 @@ import {
   FileText,
 } from "lucide-react";
 
+import { supabase } from "./supabase";
 import "./App.css";
 
-const LOGIN_USERNAME = "admin";
-const LOGIN_PASSWORD = "admin123";
+/* =====================================================
+   LOGIN SETTINGS
+===================================================== */
 
-const STORAGE = {
-  property: "rent_manager_property",
-  rooms: "rent_manager_rooms",
-  tenants: "rent_manager_tenants",
-  payments: "rent_manager_payments",
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "admin123";
+
+const LOGIN_STORAGE_KEY = "rent_manager_logged_in";
+
+/* =====================================================
+   CONSTANTS
+===================================================== */
+
+const EMPTY_PROPERTY = {
+  propertyName: "",
+  address: "",
+  ownerName: "",
+  ownerPhone: "",
+  ownerEmail: "",
 };
 
-function getStorage(key, fallback) {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function money(value) {
   return new Intl.NumberFormat("en-IN").format(
     Number(value) || 0
   );
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function monthName(date = new Date()) {
@@ -71,33 +70,68 @@ function monthName(date = new Date()) {
   });
 }
 
-function App() {
-  const [loggedIn, setLoggedIn] = useState(
-    localStorage.getItem("rent_manager_logged_in") === "true"
-  );
+/* =====================================================
+   APP
+===================================================== */
+
+export default function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const savedLogin =
+      localStorage.getItem(LOGIN_STORAGE_KEY);
+
+    setLoggedIn(savedLogin === "true");
+    setLoading(false);
+  }, []);
+
+  function handleLogin() {
+    localStorage.setItem(
+      LOGIN_STORAGE_KEY,
+      "true"
+    );
+
+    setLoggedIn(true);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(
+      LOGIN_STORAGE_KEY
+    );
+
+    setLoggedIn(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-logo">
+            <Building2 size={42} />
+          </div>
+
+          <h1>Rent Manager</h1>
+
+          <p className="login-subtitle">
+            Loading...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!loggedIn) {
     return (
       <LoginPage
-        onLogin={() => {
-          localStorage.setItem(
-            "rent_manager_logged_in",
-            "true"
-          );
-          setLoggedIn(true);
-        }}
+        onLogin={handleLogin}
       />
     );
   }
 
   return (
     <DashboardApp
-      onLogout={() => {
-        localStorage.removeItem(
-          "rent_manager_logged_in"
-        );
-        setLoggedIn(false);
-      }}
+      onLogout={handleLogout}
     />
   );
 }
@@ -107,22 +141,45 @@ function App() {
 ===================================================== */
 
 function LoginPage({ onLogin }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [username, setUsername] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   function login(e) {
     e.preventDefault();
 
+    setError("");
+    setLoading(true);
+
+    const enteredUsername =
+      username.trim().toLowerCase();
+
+    const enteredPassword =
+      password;
+
     if (
-      username.trim() === LOGIN_USERNAME &&
-      password === LOGIN_PASSWORD
+      enteredUsername ===
+        ADMIN_USERNAME &&
+      enteredPassword ===
+        ADMIN_PASSWORD
     ) {
-      setError("");
       onLogin();
-    } else {
-      setError("Invalid username or password.");
+      return;
     }
+
+    setError(
+      "Invalid username or password."
+    );
+
+    setLoading(false);
   }
 
   return (
@@ -148,9 +205,12 @@ function LoginPage({ onLogin }) {
               <input
                 type="text"
                 value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
+                onChange={(e) => {
+                  setUsername(
+                    e.target.value
+                  );
+                  setError("");
+                }}
                 placeholder="Username"
                 autoComplete="username"
                 required
@@ -167,9 +227,12 @@ function LoginPage({ onLogin }) {
               <input
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => {
+                  setPassword(
+                    e.target.value
+                  );
+                  setError("");
+                }}
                 placeholder="Password"
                 autoComplete="current-password"
                 required
@@ -186,8 +249,11 @@ function LoginPage({ onLogin }) {
           <button
             type="submit"
             className="login-button"
+            disabled={loading}
           >
-            Login
+            {loading
+              ? "Logging in..."
+              : "Login"}
           </button>
         </form>
       </div>
@@ -196,7 +262,7 @@ function LoginPage({ onLogin }) {
 }
 
 /* =====================================================
-   MAIN APP
+   MAIN DASHBOARD
 ===================================================== */
 
 function DashboardApp({ onLogout }) {
@@ -222,7 +288,9 @@ function DashboardApp({ onLogout }) {
     <div className="app">
       <aside
         className={`sidebar ${
-          sidebarOpen ? "open" : "closed"
+          sidebarOpen
+            ? "open"
+            : "closed"
         }`}
       >
         <div className="logo">
@@ -231,31 +299,37 @@ function DashboardApp({ onLogout }) {
           {sidebarOpen && (
             <div>
               <h2>Rent Manager</h2>
-              <span>House Management</span>
+              <span>
+                House Management
+              </span>
             </div>
           )}
         </div>
 
         <nav>
-          {menu.map(([name, Icon]) => (
-            <button
-              key={name}
-              className={`nav-item ${
-                activePage === name
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActivePage(name)
-              }
-            >
-              <Icon size={20} />
+          {menu.map(
+            ([name, Icon]) => (
+              <button
+                key={name}
+                className={`nav-item ${
+                  activePage === name
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() =>
+                  setActivePage(name)
+                }
+              >
+                <Icon size={20} />
 
-              {sidebarOpen && (
-                <span>{name}</span>
-              )}
-            </button>
-          ))}
+                {sidebarOpen && (
+                  <span>
+                    {name}
+                  </span>
+                )}
+              </button>
+            )
+          )}
         </nav>
 
         <button
@@ -275,7 +349,9 @@ function DashboardApp({ onLogout }) {
           <button
             className="menu-button"
             onClick={() =>
-              setSidebarOpen(!sidebarOpen)
+              setSidebarOpen(
+                !sidebarOpen
+              )
             }
           >
             {sidebarOpen ? (
@@ -289,17 +365,20 @@ function DashboardApp({ onLogout }) {
             <h1>{activePage}</h1>
 
             <p>
-              House Rent Management System
+              House Rent Management
+              System
             </p>
           </div>
         </header>
 
         <section className="content">
-          {activePage === "Dashboard" && (
+          {activePage ===
+            "Dashboard" && (
             <Dashboard />
           )}
 
-          {activePage === "Property" && (
+          {activePage ===
+            "Property" && (
             <PropertyPage />
           )}
 
@@ -307,27 +386,33 @@ function DashboardApp({ onLogout }) {
             <RoomsPage />
           )}
 
-          {activePage === "Tenants" && (
+          {activePage ===
+            "Tenants" && (
             <TenantsPage />
           )}
 
-          {activePage === "Payments" && (
+          {activePage ===
+            "Payments" && (
             <PaymentsPage />
           )}
 
-          {activePage === "Invoices" && (
+          {activePage ===
+            "Invoices" && (
             <InvoicesPage />
           )}
 
-          {activePage === "Expenses" && (
+          {activePage ===
+            "Expenses" && (
             <ExpensesPage />
           )}
 
-          {activePage === "Reports" && (
+          {activePage ===
+            "Reports" && (
             <ReportsPage />
           )}
 
-          {activePage === "Settings" && (
+          {activePage ===
+            "Settings" && (
             <SettingsPage />
           )}
         </section>
@@ -341,51 +426,137 @@ function DashboardApp({ onLogout }) {
 ===================================================== */
 
 function Dashboard() {
-  const property = getStorage(
-    STORAGE.property,
-    null
-  );
+  const [property, setProperty] =
+    useState(null);
 
-  const rooms = getStorage(
-    STORAGE.rooms,
-    []
-  );
+  const [rooms, setRooms] =
+    useState([]);
 
-  const tenants = getStorage(
-    STORAGE.tenants,
-    []
-  );
+  const [tenants, setTenants] =
+    useState([]);
 
-  const payments = getStorage(
-    STORAGE.payments,
-    []
-  );
+  const [payments, setPayments] =
+    useState([]);
 
-  const occupied = rooms.filter(
-    (room) => room.status === "Occupied"
-  ).length;
+  const [loading, setLoading] =
+    useState(true);
 
-  const collected = payments.reduce(
-    (sum, payment) =>
-      sum + Number(payment.amount || 0),
-    0
-  );
+  async function loadData() {
+    setLoading(true);
 
-  const monthlyRent = tenants.reduce(
-    (sum, tenant) =>
-      sum + Number(tenant.monthlyRent || 0),
-    0
-  );
+    const [
+      propertyResult,
+      roomsResult,
+      tenantsResult,
+      paymentsResult,
+    ] = await Promise.all([
+      supabase
+        .from("properties")
+        .select("*")
+        .maybeSingle(),
 
-  const outstanding = tenants.reduce(
-    (sum, tenant) =>
-      sum +
-      getTenantBalance(
-        tenant,
-        payments
-      ),
-    0
-  );
+      supabase
+        .from("rooms")
+        .select("*")
+        .order("room_number"),
+
+      supabase
+        .from("tenants")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("payments")
+        .select("*")
+        .order("payment_date", {
+          ascending: false,
+        }),
+    ]);
+
+    if (!propertyResult.error) {
+      setProperty(
+        propertyResult.data
+          ? mapPropertyFromDb(
+              propertyResult.data
+            )
+          : null
+      );
+    }
+
+    if (!roomsResult.error) {
+      setRooms(
+        roomsResult.data?.map(
+          mapRoomFromDb
+        ) || []
+      );
+    }
+
+    if (!tenantsResult.error) {
+      setTenants(
+        tenantsResult.data?.map(
+          mapTenantFromDb
+        ) || []
+      );
+    }
+
+    if (!paymentsResult.error) {
+      setPayments(
+        paymentsResult.data?.map(
+          mapPaymentFromDb
+        ) || []
+      );
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const occupied =
+    rooms.filter(
+      (room) =>
+        room.status ===
+        "Occupied"
+    ).length;
+
+  const collected =
+    payments.reduce(
+      (sum, payment) =>
+        sum +
+        Number(
+          payment.amount || 0
+        ),
+      0
+    );
+
+  const monthlyRent =
+    tenants.reduce(
+      (sum, tenant) =>
+        sum +
+        Number(
+          tenant.monthlyRent || 0
+        ),
+      0
+    );
+
+  const outstanding =
+    tenants.reduce(
+      (sum, tenant) =>
+        sum +
+        getTenantBalance(
+          tenant,
+          payments
+        ),
+      0
+    );
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <>
@@ -421,14 +592,18 @@ function Dashboard() {
 
         <Stat
           title="Monthly Rent"
-          value={`NPR ${money(monthlyRent)}`}
+          value={`NPR ${money(
+            monthlyRent
+          )}`}
           icon={<Receipt />}
           color="purple"
         />
 
         <Stat
           title="Outstanding"
-          value={`NPR ${money(outstanding)}`}
+          value={`NPR ${money(
+            outstanding
+          )}`}
           icon={<AlertTriangle />}
           color="orange"
         />
@@ -444,15 +619,21 @@ function Dashboard() {
                 <span>Name</span>
 
                 <strong>
-                  {property.propertyName}
+                  {
+                    property.propertyName
+                  }
                 </strong>
               </div>
 
               <div>
-                <span>Address</span>
+                <span>
+                  Address
+                </span>
 
                 <strong>
-                  {property.address}
+                  {
+                    property.address
+                  }
                 </strong>
               </div>
 
@@ -460,27 +641,34 @@ function Dashboard() {
                 <span>Owner</span>
 
                 <strong>
-                  {property.ownerName}
+                  {
+                    property.ownerName
+                  }
                 </strong>
               </div>
             </div>
           ) : (
-            <div className="empty-state">
-              <Building2 size={40} />
-
-              <p>
-                Property information not added.
-              </p>
-            </div>
+            <Empty
+              icon={
+                <Building2
+                  size={40}
+                />
+              }
+              text="Property information not added."
+            />
           )}
         </div>
 
         <div className="card">
-          <h3>Payment Summary</h3>
+          <h3>
+            Payment Summary
+          </h3>
 
           <div className="detail-list">
             <div>
-              <span>Total Tenants</span>
+              <span>
+                Total Tenants
+              </span>
 
               <strong>
                 {tenants.length}
@@ -488,7 +676,9 @@ function Dashboard() {
             </div>
 
             <div>
-              <span>Total Payments</span>
+              <span>
+                Total Payments
+              </span>
 
               <strong>
                 NPR {money(collected)}
@@ -496,15 +686,20 @@ function Dashboard() {
             </div>
 
             <div>
-              <span>Outstanding</span>
+              <span>
+                Outstanding
+              </span>
 
               <strong className="danger-text">
-                NPR {money(outstanding)}
+                NPR{" "}
+                {money(outstanding)}
               </strong>
             </div>
 
             <div>
-              <span>This Month</span>
+              <span>
+                This Month
+              </span>
 
               <strong>
                 {monthName()}
@@ -522,18 +717,39 @@ function Dashboard() {
 ===================================================== */
 
 function PropertyPage() {
-  const [form, setForm] = useState(
-    getStorage(STORAGE.property, {
-      propertyName: "",
-      address: "",
-      ownerName: "",
-      ownerPhone: "",
-      ownerEmail: "",
-    })
-  );
+  const [form, setForm] =
+    useState(EMPTY_PROPERTY);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
 
   const [saved, setSaved] =
     useState(false);
+
+  useEffect(() => {
+    async function loadProperty() {
+      const { data, error } =
+        await supabase
+          .from("properties")
+          .select("*")
+          .maybeSingle();
+
+      if (error) {
+        alert(error.message);
+      } else if (data) {
+        setForm(
+          mapPropertyFromDb(data)
+        );
+      }
+
+      setLoading(false);
+    }
+
+    loadProperty();
+  }, []);
 
   function update(field, value) {
     setForm((old) => ({
@@ -544,26 +760,70 @@ function PropertyPage() {
     setSaved(false);
   }
 
-  function save(e) {
+  async function save(e) {
     e.preventDefault();
 
-    saveStorage(
-      STORAGE.property,
-      form
-    );
+    setSaving(true);
+    setSaved(false);
 
-    setSaved(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert(
+        "Supabase database access requires an authenticated user. Please configure your Supabase database policies for this application."
+      );
+
+      setSaving(false);
+      return;
+    }
+
+    const { error } =
+      await supabase
+        .from("properties")
+        .upsert(
+          {
+            user_id: user.id,
+            property_name:
+              form.propertyName,
+            address: form.address,
+            owner_name:
+              form.ownerName,
+            owner_phone:
+              form.ownerPhone,
+            owner_email:
+              form.ownerEmail,
+          },
+          {
+            onConflict: "user_id",
+          }
+        );
+
+    if (error) {
+      alert(error.message);
+    } else {
+      setSaved(true);
+    }
+
+    setSaving(false);
+  }
+
+  if (loading) {
+    return <Loading />;
   }
 
   return (
     <div className="page">
       <div className="page-heading">
         <div>
-          <h2>Property Profile</h2>
+          <h2>
+            Property Profile
+          </h2>
 
           <p>
-            Enter your property and owner
-            information.
+            Enter your property and
+            owner information.
           </p>
         </div>
 
@@ -577,13 +837,19 @@ function PropertyPage() {
         className="form-card"
         onSubmit={save}
       >
-        <h3>Property Information</h3>
+        <h3>
+          Property Information
+        </h3>
 
         <div className="form-grid">
           <Field
             label="Property Name"
-            icon={<Building2 size={18} />}
-            value={form.propertyName}
+            icon={
+              <Building2 size={18} />
+            }
+            value={
+              form.propertyName
+            }
             onChange={(value) =>
               update(
                 "propertyName",
@@ -594,16 +860,23 @@ function PropertyPage() {
 
           <Field
             label="Address"
-            icon={<MapPin size={18} />}
+            icon={
+              <MapPin size={18} />
+            }
             value={form.address}
             onChange={(value) =>
-              update("address", value)
+              update(
+                "address",
+                value
+              )
             }
           />
 
           <Field
             label="Owner Name"
-            icon={<UserRound size={18} />}
+            icon={
+              <UserRound size={18} />
+            }
             value={form.ownerName}
             onChange={(value) =>
               update(
@@ -615,7 +888,9 @@ function PropertyPage() {
 
           <Field
             label="Phone"
-            icon={<Phone size={18} />}
+            icon={
+              <Phone size={18} />
+            }
             value={form.ownerPhone}
             onChange={(value) =>
               update(
@@ -627,7 +902,9 @@ function PropertyPage() {
 
           <Field
             label="Email"
-            icon={<Mail size={18} />}
+            icon={
+              <Mail size={18} />
+            }
             value={form.ownerEmail}
             onChange={(value) =>
               update(
@@ -642,14 +919,18 @@ function PropertyPage() {
           <button
             className="primary-button"
             type="submit"
+            disabled={saving}
           >
             <Save size={18} />
-            Save Property
+
+            {saving
+              ? "Saving..."
+              : "Save Property"}
           </button>
 
           {saved && (
             <span className="success-text">
-              ✓ Saved successfully
+              ✓ Saved to database
             </span>
           )}
         </div>
@@ -664,16 +945,10 @@ function PropertyPage() {
 
 function RoomsPage() {
   const [rooms, setRooms] =
-    useStoredState(
-      STORAGE.rooms,
-      []
-    );
+    useState([]);
 
-  const [tenants, setTenants] =
-    useStoredState(
-      STORAGE.tenants,
-      []
-    );
+  const [loading, setLoading] =
+    useState(true);
 
   const [form, setForm] =
     useState({
@@ -681,7 +956,6 @@ function RoomsPage() {
       floor: "",
       roomType: "Single",
       monthlyRent: "",
-      status: "Vacant",
     });
 
   const [editing, setEditing] =
@@ -690,38 +964,31 @@ function RoomsPage() {
   const [showForm, setShowForm] =
     useState(false);
 
-  /*
-   * Keep room status synchronized
-   * with tenant assignments.
-   */
-  useEffect(() => {
-    const updatedRooms =
-      rooms.map((room) => {
-        const occupied =
-          tenants.some(
-            (tenant) =>
-              tenant.roomId === room.id
-          );
+  async function loadRooms() {
+    setLoading(true);
 
-        return {
-          ...room,
-          status: occupied
-            ? "Occupied"
-            : "Vacant",
-        };
-      });
+    const { data, error } =
+      await supabase
+        .from("rooms")
+        .select("*")
+        .order("room_number");
 
-    const changed =
-      updatedRooms.some(
-        (room, index) =>
-          room.status !==
-          rooms[index]?.status
+    if (error) {
+      alert(error.message);
+    } else {
+      setRooms(
+        data?.map(
+          mapRoomFromDb
+        ) || []
       );
-
-    if (changed) {
-      setRooms(updatedRooms);
     }
-  }, [tenants]);
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadRooms();
+  }, []);
 
   function reset() {
     setForm({
@@ -729,18 +996,17 @@ function RoomsPage() {
       floor: "",
       roomType: "Single",
       monthlyRent: "",
-      status: "Vacant",
     });
 
     setEditing(null);
     setShowForm(false);
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
 
     if (
-      !form.roomNumber ||
+      !form.roomNumber.trim() ||
       !form.monthlyRent
     ) {
       alert(
@@ -750,15 +1016,17 @@ function RoomsPage() {
       return;
     }
 
-    const duplicate = rooms.some(
-      (room) =>
-        room.roomNumber
-          .toLowerCase() ===
-          form.roomNumber
+    const duplicate =
+      rooms.some(
+        (room) =>
+          room.roomNumber
             .trim()
-            .toLowerCase() &&
-        room.id !== editing
-    );
+            .toLowerCase() ===
+            form.roomNumber
+              .trim()
+              .toLowerCase() &&
+          room.id !== editing
+      );
 
     if (duplicate) {
       alert(
@@ -768,106 +1036,130 @@ function RoomsPage() {
       return;
     }
 
-    /*
-     * If this room is already assigned
-     * to a tenant, force Occupied.
-     */
-    const hasTenant =
-      tenants.some(
-        (tenant) =>
-          tenant.roomId ===
-          (editing ||
-            form.roomNumber)
-      );
+    const roomData = {
+      room_number:
+        form.roomNumber.trim(),
+      floor: form.floor || "",
+      room_type: form.roomType,
+      monthly_rent:
+        Number(form.monthlyRent),
+    };
+
+    let result;
 
     if (editing) {
-      setRooms(
-        rooms.map((room) =>
-          room.id === editing
-            ? {
-                ...room,
-                ...form,
-                monthlyRent:
-                  Number(
-                    form.monthlyRent
-                  ),
-              }
-            : room
-        )
-      );
+      result =
+        await supabase
+          .from("rooms")
+          .update(roomData)
+          .eq("id", editing);
     } else {
-      setRooms([
-        ...rooms,
-        {
-          ...form,
-          id: Date.now().toString(),
-          monthlyRent:
-            Number(form.monthlyRent),
-        },
-      ]);
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        alert(
+          "Supabase database access requires authentication."
+        );
+        return;
+      }
+
+      result =
+        await supabase
+          .from("rooms")
+          .insert({
+            ...roomData,
+            user_id: user.id,
+            status: "Vacant",
+          });
     }
 
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+
+    await loadRooms();
     reset();
   }
 
-  function remove(id) {
-    const tenantUsingRoom =
-      tenants.find(
-        (tenant) =>
-          tenant.roomId === id
-      );
+  async function remove(id) {
+    const { data: tenant } =
+      await supabase
+        .from("tenants")
+        .select("id,name")
+        .eq("room_id", id)
+        .maybeSingle();
 
-    if (tenantUsingRoom) {
+    if (tenant) {
       alert(
-        `Room ${rooms.find(
-          (room) => room.id === id
-        )?.roomNumber || ""} is assigned to ${
-          tenantUsingRoom.name
-        }. Remove or move the tenant first.`
+        `This room is assigned to ${tenant.name}. Remove or move the tenant first.`
       );
 
       return;
     }
 
     if (
-      window.confirm(
+      !window.confirm(
         "Delete this room?"
       )
     ) {
-      setRooms(
-        rooms.filter(
-          (room) => room.id !== id
-        )
-      );
+      return;
     }
+
+    const { error } =
+      await supabase
+        .from("rooms")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadRooms();
   }
 
   function edit(room) {
     setForm({
-      roomNumber: room.roomNumber,
+      roomNumber:
+        room.roomNumber,
       floor: room.floor,
-      roomType: room.roomType,
-      monthlyRent: room.monthlyRent,
-      status: room.status,
+      roomType:
+        room.roomType,
+      monthlyRent:
+        room.monthlyRent,
     });
 
     setEditing(room.id);
     setShowForm(true);
   }
 
-  const occupied = rooms.filter(
-    (room) =>
-      room.status === "Occupied"
-  ).length;
+  const occupied =
+    rooms.filter(
+      (room) =>
+        room.status ===
+        "Occupied"
+    ).length;
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="page">
       <div className="page-heading">
         <div>
-          <h2>Room Management</h2>
+          <h2>
+            Room Management
+          </h2>
 
           <p>
-            Manage your rooms and monthly rent.
+            Manage your rooms and
+            monthly rent.
           </p>
         </div>
 
@@ -900,7 +1192,8 @@ function RoomsPage() {
         <Stat
           title="Vacant"
           value={
-            rooms.length - occupied
+            rooms.length -
+            occupied
           }
           icon={<DoorOpen />}
           color="orange"
@@ -953,11 +1246,14 @@ function RoomsPage() {
           <div className="form-grid">
             <Field
               label="Room Number"
-              value={form.roomNumber}
+              value={
+                form.roomNumber
+              }
               onChange={(value) =>
                 setForm({
                   ...form,
-                  roomNumber: value,
+                  roomNumber:
+                    value,
                 })
               }
             />
@@ -975,11 +1271,14 @@ function RoomsPage() {
 
             <SelectField
               label="Room Type"
-              value={form.roomType}
+              value={
+                form.roomType
+              }
               onChange={(value) =>
                 setForm({
                   ...form,
-                  roomType: value,
+                  roomType:
+                    value,
                 })
               }
               options={[
@@ -994,28 +1293,16 @@ function RoomsPage() {
             <Field
               label="Monthly Rent"
               type="number"
-              value={form.monthlyRent}
+              value={
+                form.monthlyRent
+              }
               onChange={(value) =>
                 setForm({
                   ...form,
-                  monthlyRent: value,
+                  monthlyRent:
+                    value,
                 })
               }
-            />
-
-            <SelectField
-              label="Status"
-              value={form.status}
-              onChange={(value) =>
-                setForm({
-                  ...form,
-                  status: value,
-                })
-              }
-              options={[
-                "Vacant",
-                "Occupied",
-              ]}
             />
           </div>
 
@@ -1047,7 +1334,11 @@ function RoomsPage() {
 
         {rooms.length === 0 ? (
           <Empty
-            icon={<DoorOpen size={42} />}
+            icon={
+              <DoorOpen
+                size={42}
+              />
+            }
             text="No rooms added yet."
           />
         ) : (
@@ -1065,28 +1356,30 @@ function RoomsPage() {
               </thead>
 
               <tbody>
-                {rooms.map((room) => {
-                  const tenant =
-                    tenants.find(
-                      (t) =>
-                        t.roomId ===
+                {rooms.map(
+                  (room) => (
+                    <tr
+                      key={
                         room.id
-                    );
-
-                  return (
-                    <tr key={room.id}>
+                      }
+                    >
                       <td>
                         <strong>
-                          {room.roomNumber}
+                          {
+                            room.roomNumber
+                          }
                         </strong>
                       </td>
 
                       <td>
-                        {room.floor || "-"}
+                        {room.floor ||
+                          "-"}
                       </td>
 
                       <td>
-                        {room.roomType}
+                        {
+                          room.roomType
+                        }
                       </td>
 
                       <td>
@@ -1105,21 +1398,10 @@ function RoomsPage() {
                               : "orange"
                           }`}
                         >
-                          {room.status}
+                          {
+                            room.status
+                          }
                         </span>
-
-                        {tenant && (
-                          <small
-                            style={{
-                              display:
-                                "block",
-                              marginTop:
-                                "4px",
-                            }}
-                          >
-                            {tenant.name}
-                          </small>
-                        )}
                       </td>
 
                       <td>
@@ -1127,10 +1409,16 @@ function RoomsPage() {
                           <button
                             className="small-button edit"
                             onClick={() =>
-                              edit(room)
+                              edit(
+                                room
+                              )
                             }
                           >
-                            <Pencil size={16} />
+                            <Pencil
+                              size={
+                                16
+                              }
+                            />
                           </button>
 
                           <button
@@ -1141,13 +1429,17 @@ function RoomsPage() {
                               )
                             }
                           >
-                            <Trash2 size={16} />
+                            <Trash2
+                              size={
+                                16
+                              }
+                            />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -1163,21 +1455,13 @@ function RoomsPage() {
 
 function TenantsPage() {
   const [tenants, setTenants] =
-    useStoredState(
-      STORAGE.tenants,
-      []
-    );
+    useState([]);
 
-  /*
-   * IMPORTANT:
-   * Rooms are now managed with useStoredState
-   * so changing a tenant also changes room status.
-   */
   const [rooms, setRooms] =
-    useStoredState(
-      STORAGE.rooms,
-      []
-    );
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   const [showForm, setShowForm] =
     useState(false);
@@ -1201,60 +1485,66 @@ function TenantsPage() {
   const [search, setSearch] =
     useState("");
 
-  /*
-   * Automatically synchronize room
-   * status with tenant assignments.
-   *
-   * If a tenant has roomId:
-   *     room = Occupied
-   *
-   * If nobody has roomId:
-   *     room = Vacant
-   */
-  useEffect(() => {
-    const updatedRooms =
-      rooms.map((room) => {
-        const occupied =
-          tenants.some(
-            (tenant) =>
-              tenant.roomId === room.id
-          );
+  async function loadData() {
+    setLoading(true);
 
-        return {
-          ...room,
-          status: occupied
-            ? "Occupied"
-            : "Vacant",
-        };
-      });
+    const [
+      tenantsResult,
+      roomsResult,
+    ] = await Promise.all([
+      supabase
+        .from("tenants")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        }),
 
-    const changed =
-      updatedRooms.some(
-        (room, index) =>
-          room.status !==
-          rooms[index]?.status
+      supabase
+        .from("rooms")
+        .select("*")
+        .order("room_number"),
+    ]);
+
+    if (tenantsResult.error) {
+      alert(
+        tenantsResult.error.message
       );
-
-    if (changed) {
-      setRooms(updatedRooms);
+    } else {
+      setTenants(
+        tenantsResult.data?.map(
+          mapTenantFromDb
+        ) || []
+      );
     }
-  }, [tenants]);
 
-  /*
-   * ONLY rooms that are not assigned
-   * to another tenant are shown.
-   *
-   * When editing:
-   * the current tenant's existing room
-   * remains available.
-   */
+    if (roomsResult.error) {
+      alert(
+        roomsResult.error.message
+      );
+    } else {
+      setRooms(
+        roomsResult.data?.map(
+          mapRoomFromDb
+        ) || []
+      );
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const availableRooms =
     rooms.filter((room) => {
       const usedByOtherTenant =
         tenants.some(
           (tenant) =>
-            tenant.roomId === room.id &&
-            tenant.id !== editing
+            tenant.roomId ===
+              room.id &&
+            tenant.id !==
+              editing
         );
 
       return !usedByOtherTenant;
@@ -1262,7 +1552,8 @@ function TenantsPage() {
 
   function roomRent(roomId) {
     const room = rooms.find(
-      (room) => room.id === roomId
+      (room) =>
+        room.id === roomId
     );
 
     return room
@@ -1270,11 +1561,11 @@ function TenantsPage() {
       : "";
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
 
     if (
-      !form.name ||
+      !form.name.trim() ||
       !form.roomId ||
       !form.monthlyRent
     ) {
@@ -1285,15 +1576,11 @@ function TenantsPage() {
       return;
     }
 
-    /*
-     * Final protection:
-     * don't allow two tenants to have
-     * the same room.
-     */
     const roomAlreadyUsed =
       tenants.some(
         (tenant) =>
-          tenant.roomId === form.roomId &&
+          tenant.roomId ===
+            form.roomId &&
           tenant.id !== editing
       );
 
@@ -1305,86 +1592,55 @@ function TenantsPage() {
       return;
     }
 
-    /*
-     * If editing, remember old room.
-     * This is needed if tenant moves
-     * from Room 101 to Room 102.
-     */
-    const oldTenant = editing
-      ? tenants.find(
-          (tenant) =>
-            tenant.id === editing
-        )
-      : null;
+    const {
+      data: { user },
+    } =
+      await supabase.auth.getUser();
 
-    /*
-     * Save tenant.
-     */
-    if (editing) {
-      setTenants(
-        tenants.map((tenant) =>
-          tenant.id === editing
-            ? {
-                ...tenant,
-                ...form,
-                monthlyRent:
-                  Number(
-                    form.monthlyRent
-                  ),
-              }
-            : tenant
-        )
+    if (!user) {
+      alert(
+        "Supabase database access requires authentication."
       );
-    } else {
-      setTenants([
-        ...tenants,
-        {
-          ...form,
-          id: Date.now().toString(),
-          monthlyRent:
-            Number(form.monthlyRent),
-        },
-      ]);
+      return;
     }
 
-    /*
-     * Update room status.
-     *
-     * New room = Occupied
-     *
-     * Old room = Vacant
-     * if tenant moved rooms.
-     */
-    setRooms(
-      rooms.map((room) => {
-        /*
-         * Tenant changed rooms.
-         * Make old room vacant.
-         */
-        if (
-          oldTenant &&
-          oldTenant.roomId !== form.roomId &&
-          room.id === oldTenant.roomId
-        ) {
-          return {
-            ...room,
-            status: "Vacant",
-          };
-        }
+    const tenantData = {
+      name: form.name.trim(),
+      phone: form.phone || "",
+      email: form.email || "",
+      room_id: form.roomId,
+      monthly_rent:
+        Number(form.monthlyRent),
+      due_day:
+        Number(form.dueDay),
+      start_date:
+        form.startDate,
+    };
 
-        /*
-         * Assigned room becomes occupied.
-         */
-        if (room.id === form.roomId) {
-          return {
-            ...room,
-            status: "Occupied",
-          };
-        }
+    let result;
 
-        return room;
-      })
-    );
+    if (editing) {
+      result =
+        await supabase
+          .from("tenants")
+          .update(tenantData)
+          .eq("id", editing);
+    } else {
+      result =
+        await supabase
+          .from("tenants")
+          .insert({
+            ...tenantData,
+            user_id: user.id,
+          });
+    }
+
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+
+    await loadData();
 
     setForm(empty);
     setEditing(null);
@@ -1400,73 +1656,67 @@ function TenantsPage() {
       monthlyRent:
         tenant.monthlyRent,
       dueDay: tenant.dueDay,
-      startDate: tenant.startDate,
+      startDate:
+        tenant.startDate,
     });
 
     setEditing(tenant.id);
     setShowForm(true);
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (
-      window.confirm(
+      !window.confirm(
         "Delete this tenant?"
       )
     ) {
-      const tenant =
-        tenants.find(
-          (t) => t.id === id
-        );
-
-      /*
-       * Remove tenant.
-       */
-      setTenants(
-        tenants.filter(
-          (t) => t.id !== id
-        )
-      );
-
-      /*
-       * Free their room.
-       */
-      if (tenant?.roomId) {
-        setRooms(
-          rooms.map((room) =>
-            room.id === tenant.roomId
-              ? {
-                  ...room,
-                  status: "Vacant",
-                }
-              : room
-          )
-        );
-      }
+      return;
     }
+
+    const { error } =
+      await supabase
+        .from("tenants")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadData();
   }
 
-  const filtered = tenants.filter(
-    (tenant) =>
-      tenant.name
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        ) ||
-      tenant.phone
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
-  );
+  const filtered =
+    tenants.filter(
+      (tenant) =>
+        tenant.name
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          ) ||
+        tenant.phone
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          )
+    );
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="page">
       <div className="page-heading">
         <div>
-          <h2>Tenant Management</h2>
+          <h2>
+            Tenant Management
+          </h2>
 
           <p>
-            Add tenants and assign rooms.
+            Add tenants and assign
+            rooms.
           </p>
         </div>
 
@@ -1542,11 +1792,6 @@ function TenantsPage() {
               }
             />
 
-            {/* ======================================
-                ROOM DROPDOWN
-                ONLY AVAILABLE ROOMS APPEAR
-            ====================================== */}
-
             <SelectField
               label="Room"
               value={form.roomId}
@@ -1572,23 +1817,30 @@ function TenantsPage() {
               0 && (
               <div
                 style={{
-                  color: "#dc2626",
-                  fontSize: "14px",
-                  paddingTop: "8px",
+                  color:
+                    "#dc2626",
+                  fontSize:
+                    "14px",
+                  paddingTop:
+                    "8px",
                 }}
               >
-                No vacant rooms available.
+                No vacant rooms
+                available.
               </div>
             )}
 
             <Field
               label="Monthly Rent"
               type="number"
-              value={form.monthlyRent}
+              value={
+                form.monthlyRent
+              }
               onChange={(value) =>
                 setForm({
                   ...form,
-                  monthlyRent: value,
+                  monthlyRent:
+                    value,
                 })
               }
             />
@@ -1596,6 +1848,8 @@ function TenantsPage() {
             <Field
               label="Rent Due Day"
               type="number"
+              min="1"
+              max="31"
               value={form.dueDay}
               onChange={(value) =>
                 setForm({
@@ -1608,11 +1862,14 @@ function TenantsPage() {
             <Field
               label="Start Date"
               type="date"
-              value={form.startDate}
+              value={
+                form.startDate
+              }
               onChange={(value) =>
                 setForm({
                   ...form,
-                  startDate: value,
+                  startDate:
+                    value,
                 })
               }
             />
@@ -1657,7 +1914,8 @@ function TenantsPage() {
 
             <p>
               {tenants.length} tenant
-              {tenants.length !== 1
+              {tenants.length !==
+              1
                 ? "s"
                 : ""}
             </p>
@@ -1680,7 +1938,9 @@ function TenantsPage() {
 
         {filtered.length === 0 ? (
           <Empty
-            icon={<Users size={42} />}
+            icon={
+              <Users size={42} />
+            }
             text="No tenants found."
           />
         ) : (
@@ -1688,12 +1948,18 @@ function TenantsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Tenant</th>
+                  <th>
+                    Tenant
+                  </th>
                   <th>Room</th>
                   <th>Rent</th>
-                  <th>Due Day</th>
+                  <th>
+                    Due Day
+                  </th>
                   <th>Phone</th>
-                  <th>Actions</th>
+                  <th>
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
@@ -1715,12 +1981,15 @@ function TenantsPage() {
                       >
                         <td>
                           <strong>
-                            {tenant.name}
+                            {
+                              tenant.name
+                            }
                           </strong>
 
                           <small>
-                            {tenant.email ||
-                              ""}
+                            {
+                              tenant.email
+                            }
                           </small>
                         </td>
 
@@ -1740,7 +2009,9 @@ function TenantsPage() {
 
                         <td>
                           Day{" "}
-                          {tenant.dueDay}
+                          {
+                            tenant.dueDay
+                          }
                         </td>
 
                         <td>
@@ -1759,7 +2030,9 @@ function TenantsPage() {
                               }
                             >
                               <Pencil
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             </button>
 
@@ -1772,7 +2045,9 @@ function TenantsPage() {
                               }
                             >
                               <Trash2
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             </button>
                           </div>
@@ -1795,16 +2070,14 @@ function TenantsPage() {
 ===================================================== */
 
 function PaymentsPage() {
-  const tenants = getStorage(
-    STORAGE.tenants,
-    []
-  );
+  const [tenants, setTenants] =
+    useState([]);
 
   const [payments, setPayments] =
-    useStoredState(
-      STORAGE.payments,
-      []
-    );
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   const [form, setForm] =
     useState({
@@ -1814,7 +2087,58 @@ function PaymentsPage() {
       note: "",
     });
 
-  function submit(e) {
+  async function loadData() {
+    setLoading(true);
+
+    const [
+      tenantsResult,
+      paymentsResult,
+    ] = await Promise.all([
+      supabase
+        .from("tenants")
+        .select("*")
+        .order("name"),
+
+      supabase
+        .from("payments")
+        .select("*")
+        .order("payment_date", {
+          ascending: false,
+        }),
+    ]);
+
+    if (tenantsResult.error) {
+      alert(
+        tenantsResult.error.message
+      );
+    } else {
+      setTenants(
+        tenantsResult.data?.map(
+          mapTenantFromDb
+        ) || []
+      );
+    }
+
+    if (paymentsResult.error) {
+      alert(
+        paymentsResult.error.message
+      );
+    } else {
+      setPayments(
+        paymentsResult.data?.map(
+          mapPaymentFromDb
+        ) || []
+      );
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function submit(e) {
     e.preventDefault();
 
     if (
@@ -1828,16 +2152,37 @@ function PaymentsPage() {
       return;
     }
 
-    setPayments([
-      ...payments,
-      {
-        id: Date.now().toString(),
-        tenantId: form.tenantId,
-        amount: Number(form.amount),
-        date: form.date,
-        note: form.note,
-      },
-    ]);
+    const {
+      data: { user },
+    } =
+      await supabase.auth.getUser();
+
+    if (!user) {
+      alert(
+        "Supabase database access requires authentication."
+      );
+      return;
+    }
+
+    const { error } =
+      await supabase
+        .from("payments")
+        .insert({
+          user_id: user.id,
+          tenant_id:
+            form.tenantId,
+          amount:
+            Number(form.amount),
+          payment_date:
+            form.date,
+          note:
+            form.note || "",
+        });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
     setForm({
       tenantId: "",
@@ -1845,6 +2190,12 @@ function PaymentsPage() {
       date: today(),
       note: "",
     });
+
+    await loadData();
+  }
+
+  if (loading) {
+    return <Loading />;
   }
 
   return (
@@ -1854,7 +2205,8 @@ function PaymentsPage() {
           <h2>Payments</h2>
 
           <p>
-            Record rent payments from tenants.
+            Record rent payments
+            from tenants.
           </p>
         </div>
 
@@ -1868,22 +2220,29 @@ function PaymentsPage() {
         className="form-card"
         onSubmit={submit}
       >
-        <h3>Record Payment</h3>
+        <h3>
+          Record Payment
+        </h3>
 
         <div className="form-grid">
           <SelectField
             label="Tenant"
-            value={form.tenantId}
+            value={
+              form.tenantId
+            }
             onChange={(value) =>
               setForm({
                 ...form,
-                tenantId: value,
+                tenantId:
+                  value,
               })
             }
             options={tenants.map(
               (tenant) => ({
-                label: tenant.name,
-                value: tenant.id,
+                label:
+                  tenant.name,
+                value:
+                  tenant.id,
               })
             )}
           />
@@ -1895,7 +2254,8 @@ function PaymentsPage() {
             onChange={(value) =>
               setForm({
                 ...form,
-                amount: value,
+                amount:
+                  value,
               })
             }
           />
@@ -1929,18 +2289,27 @@ function PaymentsPage() {
             className="primary-button"
             type="submit"
           >
-            <CreditCard size={18} />
+            <CreditCard
+              size={18}
+            />
             Save Payment
           </button>
         </div>
       </form>
 
       <div className="table-card">
-        <h3>Payment History</h3>
+        <h3>
+          Payment History
+        </h3>
 
-        {payments.length === 0 ? (
+        {payments.length ===
+        0 ? (
           <Empty
-            icon={<CreditCard size={42} />}
+            icon={
+              <CreditCard
+                size={42}
+              />
+            }
             text="No payments recorded."
           />
         ) : (
@@ -1949,17 +2318,21 @@ function PaymentsPage() {
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Tenant</th>
-                  <th>Amount</th>
-                  <th>Note</th>
+                  <th>
+                    Tenant
+                  </th>
+                  <th>
+                    Amount
+                  </th>
+                  <th>
+                    Note
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                {payments
-                  .slice()
-                  .reverse()
-                  .map((payment) => {
+                {payments.map(
+                  (payment) => {
                     const tenant =
                       tenants.find(
                         (t) =>
@@ -1974,12 +2347,15 @@ function PaymentsPage() {
                         }
                       >
                         <td>
-                          {payment.date}
+                          {
+                            payment.date
+                          }
                         </td>
 
                         <td>
                           <strong>
-                            {tenant?.name ||
+                            {tenant
+                              ?.name ||
                               "Unknown"}
                           </strong>
                         </td>
@@ -1992,12 +2368,15 @@ function PaymentsPage() {
                         </td>
 
                         <td>
-                          {payment.note ||
-                            "-"}
+                          {
+                            payment.note ||
+                            "-"
+                          }
                         </td>
                       </tr>
                     );
-                  })}
+                  }
+                )}
               </tbody>
             </table>
           </div>
@@ -2012,62 +2391,122 @@ function PaymentsPage() {
 ===================================================== */
 
 function InvoicesPage() {
-  const tenants = getStorage(
-    STORAGE.tenants,
-    []
-  );
+  const [tenants, setTenants] =
+    useState([]);
 
-  const payments = getStorage(
-    STORAGE.payments,
-    []
-  );
+  const [payments, setPayments] =
+    useState([]);
 
-  const invoices = useMemo(() => {
-    return tenants.map((tenant) => {
-      const previousPayments =
-        payments
-          .filter(
-            (payment) =>
-              payment.tenantId ===
-              tenant.id
-          )
-          .reduce(
-            (sum, payment) =>
-              sum +
-              Number(
-                payment.amount || 0
-              ),
-            0
-          );
+  const [loading, setLoading] =
+    useState(true);
 
-      const rent =
-        Number(
-          tenant.monthlyRent
-        ) || 0;
+  useEffect(() => {
+    async function load() {
+      const [
+        tenantsResult,
+        paymentsResult,
+      ] = await Promise.all([
+        supabase
+          .from("tenants")
+          .select("*"),
 
-      const balance = Math.max(
-        0,
-        rent - previousPayments
+        supabase
+          .from("payments")
+          .select("*"),
+      ]);
+
+      if (tenantsResult.error) {
+        alert(
+          tenantsResult.error.message
+        );
+      } else {
+        setTenants(
+          tenantsResult.data?.map(
+            mapTenantFromDb
+          ) || []
+        );
+      }
+
+      if (paymentsResult.error) {
+        alert(
+          paymentsResult.error.message
+        );
+      } else {
+        setPayments(
+          paymentsResult.data?.map(
+            mapPaymentFromDb
+          ) || []
+        );
+      }
+
+      setLoading(false);
+    }
+
+    load();
+  }, []);
+
+  const invoices =
+    useMemo(() => {
+      return tenants.map(
+        (tenant) => {
+          const previousPayments =
+            payments
+              .filter(
+                (payment) =>
+                  payment.tenantId ===
+                  tenant.id
+              )
+              .reduce(
+                (
+                  sum,
+                  payment
+                ) =>
+                  sum +
+                  Number(
+                    payment.amount ||
+                      0
+                  ),
+                0
+              );
+
+          const rent =
+            Number(
+              tenant.monthlyRent
+            ) || 0;
+
+          const balance =
+            Math.max(
+              0,
+              rent -
+                previousPayments
+            );
+
+          return {
+            tenant,
+            previousPayments,
+            rent,
+            balance,
+          };
+        }
       );
+    }, [tenants, payments]);
 
-      return {
-        tenant,
-        previousPayments,
-        rent,
-        balance,
-      };
-    });
-  }, [tenants, payments]);
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="page">
       <div className="page-heading">
         <div>
-          <h2>Monthly Invoices</h2>
+          <h2>
+            Monthly Invoices
+          </h2>
 
           <p>
-            Current rent invoice and
-            outstanding balance.
+            Current rent invoice
+            and outstanding
+            balance.
           </p>
         </div>
 
@@ -2078,26 +2517,35 @@ function InvoicesPage() {
       </div>
 
       <div className="invoice-info">
-        <CalendarDays size={20} />
+        <CalendarDays
+          size={20}
+        />
 
         <div>
           <strong>
-            Invoice Period: {monthName()}
+            Invoice Period:{" "}
+            {monthName()}
           </strong>
 
           <span>
-            New monthly rent is added to
-            the tenant's outstanding
-            balance automatically.
+            Monthly rent and
+            payments are
+            calculated from your
+            database.
           </span>
         </div>
       </div>
 
       <div className="invoice-grid">
-        {invoices.length === 0 ? (
+        {invoices.length ===
+        0 ? (
           <div className="table-card">
             <Empty
-              icon={<Receipt size={42} />}
+              icon={
+                <Receipt
+                  size={42}
+                />
+              }
               text="Add tenants first."
             />
           </div>
@@ -2111,7 +2559,9 @@ function InvoicesPage() {
             }) => (
               <div
                 className="invoice-card"
-                key={tenant.id}
+                key={
+                  tenant.id
+                }
               >
                 <div className="invoice-top">
                   <div>
@@ -2120,7 +2570,9 @@ function InvoicesPage() {
                     </span>
 
                     <h3>
-                      {tenant.name}
+                      {
+                        tenant.name
+                      }
                     </h3>
                   </div>
 
@@ -2135,7 +2587,8 @@ function InvoicesPage() {
                   </span>
 
                   <strong>
-                    NPR {money(rent)}
+                    NPR{" "}
+                    {money(rent)}
                   </strong>
                 </div>
 
@@ -2159,28 +2612,38 @@ function InvoicesPage() {
 
                   <strong
                     className={
-                      balance > 0
+                      balance >
+                      0
                         ? "danger-text"
                         : "success-text"
                     }
                   >
-                    NPR {money(balance)}
+                    NPR{" "}
+                    {money(
+                      balance
+                    )}
                   </strong>
                 </div>
 
-                {balance > 0 && (
+                {balance >
+                  0 && (
                   <div className="overdue-label">
                     <AlertTriangle
-                      size={15}
+                      size={
+                        15
+                      }
                     />
                     Amount Due
                   </div>
                 )}
 
-                {balance === 0 && (
+                {balance ===
+                  0 && (
                   <div className="paid-label">
                     <CheckCircle
-                      size={15}
+                      size={
+                        15
+                      }
                     />
                     Paid
                   </div>
@@ -2189,19 +2652,6 @@ function InvoicesPage() {
             )
           )
         )}
-      </div>
-
-      <div className="important-note">
-        <strong>Example:</strong>
-
-        <span>
-          If previous balance is NPR
-          3,500 and new rent is NPR
-          3,500, the invoice becomes
-          NPR 7,000. If the tenant pays
-          NPR 5,000, the remaining
-          payable amount is NPR 2,000.
-        </span>
       </div>
     </div>
   );
@@ -2213,10 +2663,10 @@ function InvoicesPage() {
 
 function ExpensesPage() {
   const [expenses, setExpenses] =
-    useStoredState(
-      "rent_manager_expenses",
-      []
-    );
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   const [form, setForm] =
     useState({
@@ -2225,7 +2675,35 @@ function ExpensesPage() {
       date: today(),
     });
 
-  function submit(e) {
+  async function loadExpenses() {
+    setLoading(true);
+
+    const { data, error } =
+      await supabase
+        .from("expenses")
+        .select("*")
+        .order("expense_date", {
+          ascending: false,
+        });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      setExpenses(
+        data?.map(
+          mapExpenseFromDb
+        ) || []
+      );
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  async function submit(e) {
     e.preventDefault();
 
     if (
@@ -2235,37 +2713,69 @@ function ExpensesPage() {
       return;
     }
 
-    setExpenses([
-      ...expenses,
-      {
-        id: Date.now().toString(),
-        ...form,
-        amount: Number(
-          form.amount
-        ),
-      },
-    ]);
+    const {
+      data: { user },
+    } =
+      await supabase.auth.getUser();
+
+    if (!user) {
+      alert(
+        "Supabase database access requires authentication."
+      );
+      return;
+    }
+
+    const { error } =
+      await supabase
+        .from("expenses")
+        .insert({
+          user_id: user.id,
+          title: form.title,
+          amount:
+            Number(form.amount),
+          expense_date:
+            form.date,
+        });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
     setForm({
       title: "",
       amount: "",
       date: today(),
     });
+
+    await loadExpenses();
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (
-      window.confirm(
+      !window.confirm(
         "Delete this expense?"
       )
     ) {
-      setExpenses(
-        expenses.filter(
-          (expense) =>
-            expense.id !== id
-        )
-      );
+      return;
     }
+
+    const { error } =
+      await supabase
+        .from("expenses")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadExpenses();
+  }
+
+  if (loading) {
+    return <Loading />;
   }
 
   return (
@@ -2275,7 +2785,8 @@ function ExpensesPage() {
           <h2>Expenses</h2>
 
           <p>
-            Record property expenses.
+            Record property
+            expenses.
           </p>
         </div>
 
@@ -2289,7 +2800,9 @@ function ExpensesPage() {
         className="form-card"
         onSubmit={submit}
       >
-        <h3>Add Expense</h3>
+        <h3>
+          Add Expense
+        </h3>
 
         <div className="form-grid">
           <Field
@@ -2310,7 +2823,8 @@ function ExpensesPage() {
             onChange={(value) =>
               setForm({
                 ...form,
-                amount: value,
+                amount:
+                  value,
               })
             }
           />
@@ -2340,11 +2854,16 @@ function ExpensesPage() {
       </form>
 
       <div className="table-card">
-        <h3>Expense History</h3>
+        <h3>
+          Expense History
+        </h3>
 
-        {expenses.length === 0 ? (
+        {expenses.length ===
+        0 ? (
           <Empty
-            icon={<Wallet size={42} />}
+            icon={
+              <Wallet size={42} />
+            }
             text="No expenses recorded."
           />
         ) : (
@@ -2353,28 +2872,34 @@ function ExpensesPage() {
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Expense</th>
-                  <th>Amount</th>
+                  <th>
+                    Expense
+                  </th>
+                  <th>
+                    Amount
+                  </th>
                   <th></th>
                 </tr>
               </thead>
 
               <tbody>
-                {expenses
-                  .slice()
-                  .reverse()
-                  .map((expense) => (
+                {expenses.map(
+                  (expense) => (
                     <tr
                       key={
                         expense.id
                       }
                     >
                       <td>
-                        {expense.date}
+                        {
+                          expense.date
+                        }
                       </td>
 
                       <td>
-                        {expense.title}
+                        {
+                          expense.title
+                        }
                       </td>
 
                       <td>
@@ -2394,12 +2919,15 @@ function ExpensesPage() {
                           }
                         >
                           <Trash2
-                            size={16}
+                            size={
+                              16
+                            }
                           />
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -2414,33 +2942,85 @@ function ExpensesPage() {
 ===================================================== */
 
 function ReportsPage() {
-  const tenants = getStorage(
-    STORAGE.tenants,
-    []
-  );
+  const [tenants, setTenants] =
+    useState([]);
 
-  const payments = getStorage(
-    STORAGE.payments,
-    []
-  );
+  const [payments, setPayments] =
+    useState([]);
 
-  const expenses = getStorage(
-    "rent_manager_expenses",
-    []
-  );
+  const [expenses, setExpenses] =
+    useState([]);
 
-  const income = payments.reduce(
-    (sum, payment) =>
-      sum +
-      Number(payment.amount || 0),
-    0
-  );
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [
+        tenantsResult,
+        paymentsResult,
+        expensesResult,
+      ] = await Promise.all([
+        supabase
+          .from("tenants")
+          .select("*"),
+
+        supabase
+          .from("payments")
+          .select("*"),
+
+        supabase
+          .from("expenses")
+          .select("*"),
+      ]);
+
+      if (!tenantsResult.error) {
+        setTenants(
+          tenantsResult.data?.map(
+            mapTenantFromDb
+          ) || []
+        );
+      }
+
+      if (!paymentsResult.error) {
+        setPayments(
+          paymentsResult.data?.map(
+            mapPaymentFromDb
+          ) || []
+        );
+      }
+
+      if (!expensesResult.error) {
+        setExpenses(
+          expensesResult.data?.map(
+            mapExpenseFromDb
+          ) || []
+        );
+      }
+
+      setLoading(false);
+    }
+
+    load();
+  }, []);
+
+  const income =
+    payments.reduce(
+      (sum, payment) =>
+        sum +
+        Number(
+          payment.amount || 0
+        ),
+      0
+    );
 
   const expenseTotal =
     expenses.reduce(
       (sum, expense) =>
         sum +
-        Number(expense.amount || 0),
+        Number(
+          expense.amount || 0
+        ),
       0
     );
 
@@ -2454,6 +3034,10 @@ function ReportsPage() {
         ),
       0
     );
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="page">
@@ -2475,8 +3059,12 @@ function ReportsPage() {
       <div className="stats-grid">
         <Stat
           title="Total Income"
-          value={`NPR ${money(income)}`}
-          icon={<DollarSign />}
+          value={`NPR ${money(
+            income
+          )}`}
+          icon={
+            <DollarSign />
+          }
           color="green"
         />
 
@@ -2494,26 +3082,35 @@ function ReportsPage() {
           value={`NPR ${money(
             outstanding
           )}`}
-          icon={<AlertTriangle />}
+          icon={
+            <AlertTriangle />
+          }
           color="purple"
         />
 
         <Stat
           title="Net Income"
           value={`NPR ${money(
-            income - expenseTotal
+            income -
+              expenseTotal
           )}`}
-          icon={<CreditCard />}
+          icon={
+            <CreditCard />
+          }
           color="blue"
         />
       </div>
 
       <div className="card">
-        <h3>Financial Summary</h3>
+        <h3>
+          Financial Summary
+        </h3>
 
         <div className="detail-list">
           <div>
-            <span>Tenants</span>
+            <span>
+              Tenants
+            </span>
 
             <strong>
               {tenants.length}
@@ -2521,7 +3118,9 @@ function ReportsPage() {
           </div>
 
           <div>
-            <span>Total Payments</span>
+            <span>
+              Total Payments
+            </span>
 
             <strong>
               NPR {money(income)}
@@ -2529,15 +3128,22 @@ function ReportsPage() {
           </div>
 
           <div>
-            <span>Total Expenses</span>
+            <span>
+              Total Expenses
+            </span>
 
             <strong>
-              NPR {money(expenseTotal)}
+              NPR{" "}
+              {money(
+                expenseTotal
+              )}
             </strong>
           </div>
 
           <div>
-            <span>Net Income</span>
+            <span>
+              Net Income
+            </span>
 
             <strong>
               NPR{" "}
@@ -2549,10 +3155,15 @@ function ReportsPage() {
           </div>
 
           <div>
-            <span>Outstanding Rent</span>
+            <span>
+              Outstanding Rent
+            </span>
 
             <strong className="danger-text">
-              NPR {money(outstanding)}
+              NPR{" "}
+              {money(
+                outstanding
+              )}
             </strong>
           </div>
         </div>
@@ -2566,78 +3177,203 @@ function ReportsPage() {
 ===================================================== */
 
 function SettingsPage() {
-  function exportData() {
-    const data = {
-      property: getStorage(
-        STORAGE.property,
-        null
-      ),
-      rooms: getStorage(
-        STORAGE.rooms,
-        []
-      ),
-      tenants: getStorage(
-        STORAGE.tenants,
-        []
-      ),
-      payments: getStorage(
-        STORAGE.payments,
-        []
-      ),
-      expenses: getStorage(
-        "rent_manager_expenses",
-        []
-      ),
-    };
+  const [exporting, setExporting] =
+    useState(false);
 
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          data,
-          null,
-          2
-        ),
-      ],
-      {
-        type: "application/json",
-      }
-    );
+  async function exportData() {
+    setExporting(true);
 
-    const url =
-      URL.createObjectURL(blob);
+    try {
+      const [
+        propertyResult,
+        roomsResult,
+        tenantsResult,
+        paymentsResult,
+        expensesResult,
+      ] = await Promise.all([
+        supabase
+          .from("properties")
+          .select("*"),
 
-    const a =
-      document.createElement("a");
+        supabase
+          .from("rooms")
+          .select("*"),
 
-    a.href = url;
+        supabase
+          .from("tenants")
+          .select("*"),
 
-    a.download =
-      "rent-manager-backup.json";
+        supabase
+          .from("payments")
+          .select("*"),
 
-    a.click();
+        supabase
+          .from("expenses")
+          .select("*"),
+      ]);
 
-    URL.revokeObjectURL(url);
+      const data = {
+        exportedAt:
+          new Date().toISOString(),
+
+        property:
+          propertyResult.data ||
+          [],
+
+        rooms:
+          roomsResult.data || [],
+
+        tenants:
+          tenantsResult.data || [],
+
+        payments:
+          paymentsResult.data || [],
+
+        expenses:
+          expensesResult.data || [],
+      };
+
+      const blob =
+        new Blob(
+          [
+            JSON.stringify(
+              data,
+              null,
+              2
+            ),
+          ],
+          {
+            type:
+              "application/json",
+          }
+        );
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+      const a =
+        document.createElement(
+          "a"
+        );
+
+      a.href = url;
+
+      a.download =
+        "rent-manager-backup.json";
+
+      a.click();
+
+      URL.revokeObjectURL(
+        url
+      );
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setExporting(false);
+    }
   }
 
-  function clearData() {
+  async function clearData() {
     if (
-      window.confirm(
+      !window.confirm(
         "This will delete all property, room, tenant, payment and expense data. Continue?"
       )
     ) {
-      Object.values(STORAGE).forEach(
-        (key) =>
-          localStorage.removeItem(
-            key
-          )
-      );
-
-      localStorage.removeItem(
-        "rent_manager_expenses"
-      );
-
-      window.location.reload();
+      return;
     }
+
+    const paymentsResult =
+      await supabase
+        .from("payments")
+        .delete()
+        .not(
+          "id",
+          "is",
+          null
+        );
+
+    if (paymentsResult.error) {
+      alert(
+        paymentsResult.error.message
+      );
+      return;
+    }
+
+    const tenantsResult =
+      await supabase
+        .from("tenants")
+        .delete()
+        .not(
+          "id",
+          "is",
+          null
+        );
+
+    if (tenantsResult.error) {
+      alert(
+        tenantsResult.error.message
+      );
+      return;
+    }
+
+    const expensesResult =
+      await supabase
+        .from("expenses")
+        .delete()
+        .not(
+          "id",
+          "is",
+          null
+        );
+
+    if (expensesResult.error) {
+      alert(
+        expensesResult.error.message
+      );
+      return;
+    }
+
+    const roomsResult =
+      await supabase
+        .from("rooms")
+        .delete()
+        .not(
+          "id",
+          "is",
+          null
+        );
+
+    if (roomsResult.error) {
+      alert(
+        roomsResult.error.message
+      );
+      return;
+    }
+
+    const propertyResult =
+      await supabase
+        .from("properties")
+        .delete()
+        .not(
+          "id",
+          "is",
+          null
+        );
+
+    if (propertyResult.error) {
+      alert(
+        propertyResult.error.message
+      );
+      return;
+    }
+
+    alert(
+      "All your data has been deleted."
+    );
+
+    window.location.reload();
   }
 
   return (
@@ -2647,7 +3383,8 @@ function SettingsPage() {
           <h2>Settings</h2>
 
           <p>
-            Backup and application settings.
+            Backup and application
+            settings.
           </p>
         </div>
 
@@ -2659,29 +3396,41 @@ function SettingsPage() {
 
       <div className="settings-grid">
         <div className="card">
-          <h3>Backup Data</h3>
+          <h3>
+            Backup Data
+          </h3>
 
           <p className="muted">
-            Download your property,
-            rooms, tenants, payments and
-            expenses as a JSON backup.
+            Download your
+            property, rooms,
+            tenants, payments
+            and expenses as a
+            JSON backup.
           </p>
 
           <button
             className="primary-button"
             onClick={exportData}
+            disabled={exporting}
           >
             <Save size={18} />
-            Export Backup
+
+            {exporting
+              ? "Exporting..."
+              : "Export Backup"}
           </button>
         </div>
 
         <div className="card danger-card">
-          <h3>Delete All Data</h3>
+          <h3>
+            Delete All Data
+          </h3>
 
           <p className="muted">
-            Delete all application data
-            from this browser.
+            Delete all data
+            belonging to your
+            account from
+            Supabase.
           </p>
 
           <button
@@ -2698,21 +3447,120 @@ function SettingsPage() {
 }
 
 /* =====================================================
-   HELPERS
+   DATABASE MAPPERS
 ===================================================== */
 
-function useStoredState(key, initial) {
-  const [state, setState] =
-    useState(() =>
-      getStorage(key, initial)
-    );
-
-  useEffect(() => {
-    saveStorage(key, state);
-  }, [key, state]);
-
-  return [state, setState];
+function mapPropertyFromDb(row) {
+  return {
+    id: row.id,
+    propertyName:
+      row.property_name || "",
+    address:
+      row.address || "",
+    ownerName:
+      row.owner_name || "",
+    ownerPhone:
+      row.owner_phone || "",
+    ownerEmail:
+      row.owner_email || "",
+    createdAt:
+      row.created_at,
+    updatedAt:
+      row.updated_at,
+  };
 }
+
+function mapRoomFromDb(row) {
+  return {
+    id: row.id,
+    roomNumber:
+      row.room_number || "",
+    floor:
+      row.floor || "",
+    roomType:
+      row.room_type ||
+      "Single",
+    monthlyRent:
+      Number(
+        row.monthly_rent || 0
+      ),
+    status:
+      row.status ||
+      "Vacant",
+    createdAt:
+      row.created_at,
+    updatedAt:
+      row.updated_at,
+  };
+}
+
+function mapTenantFromDb(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    phone:
+      row.phone || "",
+    email:
+      row.email || "",
+    roomId:
+      row.room_id,
+    monthlyRent:
+      Number(
+        row.monthly_rent || 0
+      ),
+    dueDay:
+      Number(
+        row.due_day || 5
+      ),
+    startDate:
+      row.start_date ||
+      today(),
+    createdAt:
+      row.created_at,
+    updatedAt:
+      row.updated_at,
+  };
+}
+
+function mapPaymentFromDb(row) {
+  return {
+    id: row.id,
+    tenantId:
+      row.tenant_id,
+    amount:
+      Number(
+        row.amount || 0
+      ),
+    date:
+      row.payment_date ||
+      "",
+    note:
+      row.note || "",
+    createdAt:
+      row.created_at,
+  };
+}
+
+function mapExpenseFromDb(row) {
+  return {
+    id: row.id,
+    title:
+      row.title || "",
+    amount:
+      Number(
+        row.amount || 0
+      ),
+    date:
+      row.expense_date ||
+      "",
+    createdAt:
+      row.created_at,
+  };
+}
+
+/* =====================================================
+   BALANCE
+===================================================== */
 
 function getTenantBalance(
   tenant,
@@ -2745,6 +3593,43 @@ function getTenantBalance(
   );
 }
 
+/* =====================================================
+   LOADING
+===================================================== */
+
+function Loading() {
+  return (
+    <div className="page">
+      <div
+        className="card"
+        style={{
+          textAlign:
+            "center",
+          padding: "50px",
+        }}
+      >
+        <Building2
+          size={42}
+          color="#2563eb"
+        />
+
+        <h3>
+          Loading...
+        </h3>
+
+        <p className="muted">
+          Loading data from
+          Supabase.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* =====================================================
+   STAT
+===================================================== */
+
 function Stat({
   title,
   value,
@@ -2768,12 +3653,18 @@ function Stat({
   );
 }
 
+/* =====================================================
+   FIELD
+===================================================== */
+
 function Field({
   label,
   value,
   onChange,
   type = "text",
   icon,
+  min,
+  max,
 }) {
   return (
     <div className="form-group">
@@ -2784,7 +3675,11 @@ function Field({
 
         <input
           type={type}
-          value={value || ""}
+          value={
+            value ?? ""
+          }
+          min={min}
+          max={max}
           onChange={(e) =>
             onChange(
               e.target.value
@@ -2795,6 +3690,10 @@ function Field({
     </div>
   );
 }
+
+/* =====================================================
+   SELECT
+===================================================== */
 
 function SelectField({
   label,
@@ -2819,30 +3718,42 @@ function SelectField({
             Select...
           </option>
 
-          {options.map((option) => {
-            const item =
-              typeof option ===
-              "string"
-                ? {
-                    label: option,
-                    value: option,
-                  }
-                : option;
+          {options.map(
+            (option) => {
+              const item =
+                typeof option ===
+                "string"
+                  ? {
+                      label:
+                        option,
+                      value:
+                        option,
+                    }
+                  : option;
 
-            return (
-              <option
-                key={item.value}
-                value={item.value}
-              >
-                {item.label}
-              </option>
-            );
-          })}
+              return (
+                <option
+                  key={
+                    item.value
+                  }
+                  value={
+                    item.value
+                  }
+                >
+                  {item.label}
+                </option>
+              );
+            }
+          )}
         </select>
       </div>
     </div>
   );
 }
+
+/* =====================================================
+   EMPTY
+===================================================== */
 
 function Empty({
   icon,
@@ -2856,5 +3767,3 @@ function Empty({
     </div>
   );
 }
-
-export default App;
