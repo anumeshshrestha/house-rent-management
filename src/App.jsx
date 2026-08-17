@@ -186,13 +186,6 @@ function LoginPage({ onLogin }) {
           </button>
         </form>
 
-        <div className="login-help">
-          <strong>Default login</strong>
-          <br />
-          Username: admin
-          <br />
-          Password: admin123
-        </div>
       </div>
     </div>
   );
