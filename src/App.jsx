@@ -1031,10 +1031,37 @@ function TenantsPage() {
       []
     );
 
-  const rooms = getStorage(
-    STORAGE.rooms,
-    []
+ const [rooms, setRooms] = useStoredState(
+  STORAGE.rooms,
+  []
+);
+
+useEffect(() => {
+  const occupiedRoomIds = new Set(
+    tenants.map(
+      (tenant) => tenant.roomId
+    )
   );
+
+  const updatedRooms = rooms.map(
+    (room) => ({
+      ...room,
+      status: occupiedRoomIds.has(room.id)
+        ? "Occupied"
+        : "Vacant",
+    })
+  );
+
+  const changed = updatedRooms.some(
+    (room, index) =>
+      room.status !==
+      rooms[index]?.status
+  );
+
+  if (changed) {
+    setRooms(updatedRooms);
+  }
+}, [tenants]);
 
   const [showForm, setShowForm] =
     useState(false);
@@ -1069,64 +1096,100 @@ function TenantsPage() {
   }
 
   function submit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (
-      !form.name ||
-      !form.roomId ||
-      !form.monthlyRent
-    ) {
-      alert(
-        "Name, room and rent are required."
-      );
-      return;
-    }
-
-    const roomAlreadyUsed =
-      tenants.some(
-        (t) =>
-          t.roomId === form.roomId &&
-          t.id !== editing
-      );
-
-    if (roomAlreadyUsed) {
-      alert(
-        "This room already has a tenant."
-      );
-      return;
-    }
-
-    if (editing) {
-      setTenants(
-        tenants.map((tenant) =>
-          tenant.id === editing
-            ? {
-                ...tenant,
-                ...form,
-                monthlyRent:
-                  Number(
-                    form.monthlyRent
-                  ),
-              }
-            : tenant
-        )
-      );
-    } else {
-      setTenants([
-        ...tenants,
-        {
-          ...form,
-          id: Date.now().toString(),
-          monthlyRent:
-            Number(form.monthlyRent),
-        },
-      ]);
-    }
-
-    setForm(empty);
-    setEditing(null);
-    setShowForm(false);
+  if (
+    !form.name ||
+    !form.roomId ||
+    !form.monthlyRent
+  ) {
+    alert(
+      "Name, room and rent are required."
+    );
+    return;
   }
+
+  const roomAlreadyUsed =
+    tenants.some(
+      (t) =>
+        t.roomId === form.roomId &&
+        t.id !== editing
+    );
+
+  if (roomAlreadyUsed) {
+    alert(
+      "This room already has a tenant."
+    );
+    return;
+  }
+
+  // If editing, get the tenant's previous room
+  const oldTenant = editing
+    ? tenants.find(
+        (t) => t.id === editing
+      )
+    : null;
+
+  // Save tenant
+  if (editing) {
+    setTenants(
+      tenants.map((tenant) =>
+        tenant.id === editing
+          ? {
+              ...tenant,
+              ...form,
+              monthlyRent:
+                Number(
+                  form.monthlyRent
+                ),
+            }
+          : tenant
+      )
+    );
+  } else {
+    setTenants([
+      ...tenants,
+      {
+        ...form,
+        id: Date.now().toString(),
+        monthlyRent:
+          Number(form.monthlyRent),
+      },
+    ]);
+  }
+
+  // Update room status
+  setRooms(
+    rooms.map((room) => {
+      // If editing and tenant changed rooms,
+      // make the old room vacant
+      if (
+        oldTenant &&
+        oldTenant.roomId !== form.roomId &&
+        room.id === oldTenant.roomId
+      ) {
+        return {
+          ...room,
+          status: "Vacant",
+        };
+      }
+
+      // New/current assigned room becomes occupied
+      if (room.id === form.roomId) {
+        return {
+          ...room,
+          status: "Occupied",
+        };
+      }
+
+      return room;
+    })
+  );
+
+  setForm(empty);
+  setEditing(null);
+  setShowForm(false);
+}
 
   function edit(tenant) {
     setForm({
@@ -1144,19 +1207,38 @@ function TenantsPage() {
     setShowForm(true);
   }
 
-  function remove(id) {
-    if (
-      window.confirm(
-        "Delete this tenant?"
+ function remove(id) {
+  if (
+    window.confirm(
+      "Delete this tenant?"
+    )
+  ) {
+    const tenant = tenants.find(
+      (t) => t.id === id
+    );
+
+    // Delete tenant
+    setTenants(
+      tenants.filter(
+        (t) => t.id !== id
       )
-    ) {
-      setTenants(
-        tenants.filter(
-          (t) => t.id !== id
+    );
+
+    // Make the tenant's room vacant
+    if (tenant?.roomId) {
+      setRooms(
+        rooms.map((room) =>
+          room.id === tenant.roomId
+            ? {
+                ...room,
+                status: "Vacant",
+              }
+            : room
         )
       );
     }
   }
+}
 
   const filtered = tenants.filter(
     (tenant) =>
