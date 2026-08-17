@@ -118,6 +118,7 @@ function LoginPage({ onLogin }) {
       username.trim() === LOGIN_USERNAME &&
       password === LOGIN_PASSWORD
     ) {
+      setError("");
       onLogin();
     } else {
       setError("Invalid username or password.");
@@ -132,6 +133,7 @@ function LoginPage({ onLogin }) {
         </div>
 
         <h1>Rent Manager</h1>
+
         <p className="login-subtitle">
           House Rent Management System
         </p>
@@ -144,11 +146,13 @@ function LoginPage({ onLogin }) {
               <User size={18} />
 
               <input
+                type="text"
                 value={username}
                 onChange={(e) =>
                   setUsername(e.target.value)
                 }
                 placeholder="Username"
+                autoComplete="username"
                 required
               />
             </div>
@@ -167,6 +171,7 @@ function LoginPage({ onLogin }) {
                   setPassword(e.target.value)
                 }
                 placeholder="Password"
+                autoComplete="current-password"
                 required
               />
             </div>
@@ -185,7 +190,6 @@ function LoginPage({ onLogin }) {
             Login
           </button>
         </form>
-
       </div>
     </div>
   );
@@ -283,6 +287,7 @@ function DashboardApp({ onLogout }) {
 
           <div>
             <h1>{activePage}</h1>
+
             <p>
               House Rent Management System
             </p>
@@ -357,12 +362,12 @@ function Dashboard() {
   );
 
   const occupied = rooms.filter(
-    (r) => r.status === "Occupied"
+    (room) => room.status === "Occupied"
   ).length;
 
   const collected = payments.reduce(
-    (sum, p) =>
-      sum + Number(p.amount || 0),
+    (sum, payment) =>
+      sum + Number(payment.amount || 0),
     0
   );
 
@@ -374,7 +379,8 @@ function Dashboard() {
 
   const outstanding = tenants.reduce(
     (sum, tenant) =>
-      sum + getTenantBalance(
+      sum +
+      getTenantBalance(
         tenant,
         payments
       ),
@@ -436,6 +442,7 @@ function Dashboard() {
             <div className="detail-list">
               <div>
                 <span>Name</span>
+
                 <strong>
                   {property.propertyName}
                 </strong>
@@ -443,6 +450,7 @@ function Dashboard() {
 
               <div>
                 <span>Address</span>
+
                 <strong>
                   {property.address}
                 </strong>
@@ -450,6 +458,7 @@ function Dashboard() {
 
               <div>
                 <span>Owner</span>
+
                 <strong>
                   {property.ownerName}
                 </strong>
@@ -458,6 +467,7 @@ function Dashboard() {
           ) : (
             <div className="empty-state">
               <Building2 size={40} />
+
               <p>
                 Property information not added.
               </p>
@@ -471,6 +481,7 @@ function Dashboard() {
           <div className="detail-list">
             <div>
               <span>Total Tenants</span>
+
               <strong>
                 {tenants.length}
               </strong>
@@ -478,6 +489,7 @@ function Dashboard() {
 
             <div>
               <span>Total Payments</span>
+
               <strong>
                 NPR {money(collected)}
               </strong>
@@ -485,6 +497,7 @@ function Dashboard() {
 
             <div>
               <span>Outstanding</span>
+
               <strong className="danger-text">
                 NPR {money(outstanding)}
               </strong>
@@ -492,6 +505,7 @@ function Dashboard() {
 
             <div>
               <span>This Month</span>
+
               <strong>
                 {monthName()}
               </strong>
@@ -533,7 +547,11 @@ function PropertyPage() {
   function save(e) {
     e.preventDefault();
 
-    saveStorage(STORAGE.property, form);
+    saveStorage(
+      STORAGE.property,
+      form
+    );
+
     setSaved(true);
   }
 
@@ -542,6 +560,7 @@ function PropertyPage() {
       <div className="page-heading">
         <div>
           <h2>Property Profile</h2>
+
           <p>
             Enter your property and owner
             information.
@@ -565,8 +584,11 @@ function PropertyPage() {
             label="Property Name"
             icon={<Building2 size={18} />}
             value={form.propertyName}
-            onChange={(v) =>
-              update("propertyName", v)
+            onChange={(value) =>
+              update(
+                "propertyName",
+                value
+              )
             }
           />
 
@@ -574,8 +596,8 @@ function PropertyPage() {
             label="Address"
             icon={<MapPin size={18} />}
             value={form.address}
-            onChange={(v) =>
-              update("address", v)
+            onChange={(value) =>
+              update("address", value)
             }
           />
 
@@ -583,8 +605,11 @@ function PropertyPage() {
             label="Owner Name"
             icon={<UserRound size={18} />}
             value={form.ownerName}
-            onChange={(v) =>
-              update("ownerName", v)
+            onChange={(value) =>
+              update(
+                "ownerName",
+                value
+              )
             }
           />
 
@@ -592,8 +617,11 @@ function PropertyPage() {
             label="Phone"
             icon={<Phone size={18} />}
             value={form.ownerPhone}
-            onChange={(v) =>
-              update("ownerPhone", v)
+            onChange={(value) =>
+              update(
+                "ownerPhone",
+                value
+              )
             }
           />
 
@@ -601,8 +629,11 @@ function PropertyPage() {
             label="Email"
             icon={<Mail size={18} />}
             value={form.ownerEmail}
-            onChange={(v) =>
-              update("ownerEmail", v)
+            onChange={(value) =>
+              update(
+                "ownerEmail",
+                value
+              )
             }
           />
         </div>
@@ -638,6 +669,12 @@ function RoomsPage() {
       []
     );
 
+  const [tenants, setTenants] =
+    useStoredState(
+      STORAGE.tenants,
+      []
+    );
+
   const [form, setForm] =
     useState({
       roomNumber: "",
@@ -652,6 +689,39 @@ function RoomsPage() {
 
   const [showForm, setShowForm] =
     useState(false);
+
+  /*
+   * Keep room status synchronized
+   * with tenant assignments.
+   */
+  useEffect(() => {
+    const updatedRooms =
+      rooms.map((room) => {
+        const occupied =
+          tenants.some(
+            (tenant) =>
+              tenant.roomId === room.id
+          );
+
+        return {
+          ...room,
+          status: occupied
+            ? "Occupied"
+            : "Vacant",
+        };
+      });
+
+    const changed =
+      updatedRooms.some(
+        (room, index) =>
+          room.status !==
+          rooms[index]?.status
+      );
+
+    if (changed) {
+      setRooms(updatedRooms);
+    }
+  }, [tenants]);
 
   function reset() {
     setForm({
@@ -669,26 +739,46 @@ function RoomsPage() {
   function submit(e) {
     e.preventDefault();
 
-    if (!form.roomNumber || !form.monthlyRent) {
+    if (
+      !form.roomNumber ||
+      !form.monthlyRent
+    ) {
       alert(
         "Room number and monthly rent are required."
       );
+
       return;
     }
 
     const duplicate = rooms.some(
-      (r) =>
-        r.roomNumber.toLowerCase() ===
+      (room) =>
+        room.roomNumber
+          .toLowerCase() ===
           form.roomNumber
             .trim()
             .toLowerCase() &&
-        r.id !== editing
+        room.id !== editing
     );
 
     if (duplicate) {
-      alert("This room already exists.");
+      alert(
+        "This room already exists."
+      );
+
       return;
     }
+
+    /*
+     * If this room is already assigned
+     * to a tenant, force Occupied.
+     */
+    const hasTenant =
+      tenants.some(
+        (tenant) =>
+          tenant.roomId ===
+          (editing ||
+            form.roomNumber)
+      );
 
     if (editing) {
       setRooms(
@@ -698,7 +788,9 @@ function RoomsPage() {
                 ...room,
                 ...form,
                 monthlyRent:
-                  Number(form.monthlyRent),
+                  Number(
+                    form.monthlyRent
+                  ),
               }
             : room
         )
@@ -719,6 +811,24 @@ function RoomsPage() {
   }
 
   function remove(id) {
+    const tenantUsingRoom =
+      tenants.find(
+        (tenant) =>
+          tenant.roomId === id
+      );
+
+    if (tenantUsingRoom) {
+      alert(
+        `Room ${rooms.find(
+          (room) => room.id === id
+        )?.roomNumber || ""} is assigned to ${
+          tenantUsingRoom.name
+        }. Remove or move the tenant first.`
+      );
+
+      return;
+    }
+
     if (
       window.confirm(
         "Delete this room?"
@@ -726,7 +836,7 @@ function RoomsPage() {
     ) {
       setRooms(
         rooms.filter(
-          (r) => r.id !== id
+          (room) => room.id !== id
         )
       );
     }
@@ -746,7 +856,8 @@ function RoomsPage() {
   }
 
   const occupied = rooms.filter(
-    (r) => r.status === "Occupied"
+    (room) =>
+      room.status === "Occupied"
   ).length;
 
   return (
@@ -754,6 +865,7 @@ function RoomsPage() {
       <div className="page-heading">
         <div>
           <h2>Room Management</h2>
+
           <p>
             Manage your rooms and monthly rent.
           </p>
@@ -799,15 +911,15 @@ function RoomsPage() {
           value={`NPR ${money(
             rooms
               .filter(
-                (r) =>
-                  r.status ===
+                (room) =>
+                  room.status ===
                   "Occupied"
               )
               .reduce(
-                (sum, r) =>
+                (sum, room) =>
                   sum +
                   Number(
-                    r.monthlyRent
+                    room.monthlyRent
                   ),
                 0
               )
@@ -842,10 +954,10 @@ function RoomsPage() {
             <Field
               label="Room Number"
               value={form.roomNumber}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  roomNumber: v,
+                  roomNumber: value,
                 })
               }
             />
@@ -853,10 +965,10 @@ function RoomsPage() {
             <Field
               label="Floor"
               value={form.floor}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  floor: v,
+                  floor: value,
                 })
               }
             />
@@ -864,10 +976,10 @@ function RoomsPage() {
             <SelectField
               label="Room Type"
               value={form.roomType}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  roomType: v,
+                  roomType: value,
                 })
               }
               options={[
@@ -883,10 +995,10 @@ function RoomsPage() {
               label="Monthly Rent"
               type="number"
               value={form.monthlyRent}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  monthlyRent: v,
+                  monthlyRent: value,
                 })
               }
             />
@@ -894,10 +1006,10 @@ function RoomsPage() {
             <SelectField
               label="Status"
               value={form.status}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  status: v,
+                  status: value,
                 })
               }
               options={[
@@ -913,6 +1025,7 @@ function RoomsPage() {
               type="submit"
             >
               <Save size={18} />
+
               {editing
                 ? "Update Room"
                 : "Save Room"}
@@ -952,65 +1065,89 @@ function RoomsPage() {
               </thead>
 
               <tbody>
-                {rooms.map((room) => (
-                  <tr key={room.id}>
-                    <td>
-                      <strong>
-                        {room.roomNumber}
-                      </strong>
-                    </td>
+                {rooms.map((room) => {
+                  const tenant =
+                    tenants.find(
+                      (t) =>
+                        t.roomId ===
+                        room.id
+                    );
 
-                    <td>
-                      {room.floor || "-"}
-                    </td>
+                  return (
+                    <tr key={room.id}>
+                      <td>
+                        <strong>
+                          {room.roomNumber}
+                        </strong>
+                      </td>
 
-                    <td>
-                      {room.roomType}
-                    </td>
+                      <td>
+                        {room.floor || "-"}
+                      </td>
 
-                    <td>
-                      NPR{" "}
-                      {money(
-                        room.monthlyRent
-                      )}
-                    </td>
+                      <td>
+                        {room.roomType}
+                      </td>
 
-                    <td>
-                      <span
-                        className={`badge ${
-                          room.status ===
-                          "Occupied"
-                            ? "green"
-                            : "orange"
-                        }`}
-                      >
-                        {room.status}
-                      </span>
-                    </td>
+                      <td>
+                        NPR{" "}
+                        {money(
+                          room.monthlyRent
+                        )}
+                      </td>
 
-                    <td>
-                      <div className="actions">
-                        <button
-                          className="small-button edit"
-                          onClick={() =>
-                            edit(room)
-                          }
+                      <td>
+                        <span
+                          className={`badge ${
+                            room.status ===
+                            "Occupied"
+                              ? "green"
+                              : "orange"
+                          }`}
                         >
-                          <Pencil size={16} />
-                        </button>
+                          {room.status}
+                        </span>
 
-                        <button
-                          className="small-button delete"
-                          onClick={() =>
-                            remove(room.id)
-                          }
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        {tenant && (
+                          <small
+                            style={{
+                              display:
+                                "block",
+                              marginTop:
+                                "4px",
+                            }}
+                          >
+                            {tenant.name}
+                          </small>
+                        )}
+                      </td>
+
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="small-button edit"
+                            onClick={() =>
+                              edit(room)
+                            }
+                          >
+                            <Pencil size={16} />
+                          </button>
+
+                          <button
+                            className="small-button delete"
+                            onClick={() =>
+                              remove(
+                                room.id
+                              )
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1031,37 +1168,16 @@ function TenantsPage() {
       []
     );
 
- const [rooms, setRooms] = useStoredState(
-  STORAGE.rooms,
-  []
-);
-
-useEffect(() => {
-  const occupiedRoomIds = new Set(
-    tenants.map(
-      (tenant) => tenant.roomId
-    )
-  );
-
-  const updatedRooms = rooms.map(
-    (room) => ({
-      ...room,
-      status: occupiedRoomIds.has(room.id)
-        ? "Occupied"
-        : "Vacant",
-    })
-  );
-
-  const changed = updatedRooms.some(
-    (room, index) =>
-      room.status !==
-      rooms[index]?.status
-  );
-
-  if (changed) {
-    setRooms(updatedRooms);
-  }
-}, [tenants]);
+  /*
+   * IMPORTANT:
+   * Rooms are now managed with useStoredState
+   * so changing a tenant also changes room status.
+   */
+  const [rooms, setRooms] =
+    useStoredState(
+      STORAGE.rooms,
+      []
+    );
 
   const [showForm, setShowForm] =
     useState(false);
@@ -1085,9 +1201,68 @@ useEffect(() => {
   const [search, setSearch] =
     useState("");
 
+  /*
+   * Automatically synchronize room
+   * status with tenant assignments.
+   *
+   * If a tenant has roomId:
+   *     room = Occupied
+   *
+   * If nobody has roomId:
+   *     room = Vacant
+   */
+  useEffect(() => {
+    const updatedRooms =
+      rooms.map((room) => {
+        const occupied =
+          tenants.some(
+            (tenant) =>
+              tenant.roomId === room.id
+          );
+
+        return {
+          ...room,
+          status: occupied
+            ? "Occupied"
+            : "Vacant",
+        };
+      });
+
+    const changed =
+      updatedRooms.some(
+        (room, index) =>
+          room.status !==
+          rooms[index]?.status
+      );
+
+    if (changed) {
+      setRooms(updatedRooms);
+    }
+  }, [tenants]);
+
+  /*
+   * ONLY rooms that are not assigned
+   * to another tenant are shown.
+   *
+   * When editing:
+   * the current tenant's existing room
+   * remains available.
+   */
+  const availableRooms =
+    rooms.filter((room) => {
+      const usedByOtherTenant =
+        tenants.some(
+          (tenant) =>
+            tenant.roomId === room.id &&
+            tenant.id !== editing
+        );
+
+      return !usedByOtherTenant;
+    });
+
   function roomRent(roomId) {
     const room = rooms.find(
-      (r) => r.id === roomId
+      (room) => room.id === roomId
     );
 
     return room
@@ -1096,100 +1271,125 @@ useEffect(() => {
   }
 
   function submit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (
-    !form.name ||
-    !form.roomId ||
-    !form.monthlyRent
-  ) {
-    alert(
-      "Name, room and rent are required."
+    if (
+      !form.name ||
+      !form.roomId ||
+      !form.monthlyRent
+    ) {
+      alert(
+        "Name, room and rent are required."
+      );
+
+      return;
+    }
+
+    /*
+     * Final protection:
+     * don't allow two tenants to have
+     * the same room.
+     */
+    const roomAlreadyUsed =
+      tenants.some(
+        (tenant) =>
+          tenant.roomId === form.roomId &&
+          tenant.id !== editing
+      );
+
+    if (roomAlreadyUsed) {
+      alert(
+        "This room is already occupied."
+      );
+
+      return;
+    }
+
+    /*
+     * If editing, remember old room.
+     * This is needed if tenant moves
+     * from Room 101 to Room 102.
+     */
+    const oldTenant = editing
+      ? tenants.find(
+          (tenant) =>
+            tenant.id === editing
+        )
+      : null;
+
+    /*
+     * Save tenant.
+     */
+    if (editing) {
+      setTenants(
+        tenants.map((tenant) =>
+          tenant.id === editing
+            ? {
+                ...tenant,
+                ...form,
+                monthlyRent:
+                  Number(
+                    form.monthlyRent
+                  ),
+              }
+            : tenant
+        )
+      );
+    } else {
+      setTenants([
+        ...tenants,
+        {
+          ...form,
+          id: Date.now().toString(),
+          monthlyRent:
+            Number(form.monthlyRent),
+        },
+      ]);
+    }
+
+    /*
+     * Update room status.
+     *
+     * New room = Occupied
+     *
+     * Old room = Vacant
+     * if tenant moved rooms.
+     */
+    setRooms(
+      rooms.map((room) => {
+        /*
+         * Tenant changed rooms.
+         * Make old room vacant.
+         */
+        if (
+          oldTenant &&
+          oldTenant.roomId !== form.roomId &&
+          room.id === oldTenant.roomId
+        ) {
+          return {
+            ...room,
+            status: "Vacant",
+          };
+        }
+
+        /*
+         * Assigned room becomes occupied.
+         */
+        if (room.id === form.roomId) {
+          return {
+            ...room,
+            status: "Occupied",
+          };
+        }
+
+        return room;
+      })
     );
-    return;
+
+    setForm(empty);
+    setEditing(null);
+    setShowForm(false);
   }
-
-  const roomAlreadyUsed =
-    tenants.some(
-      (t) =>
-        t.roomId === form.roomId &&
-        t.id !== editing
-    );
-
-  if (roomAlreadyUsed) {
-    alert(
-      "This room already has a tenant."
-    );
-    return;
-  }
-
-  // If editing, get the tenant's previous room
-  const oldTenant = editing
-    ? tenants.find(
-        (t) => t.id === editing
-      )
-    : null;
-
-  // Save tenant
-  if (editing) {
-    setTenants(
-      tenants.map((tenant) =>
-        tenant.id === editing
-          ? {
-              ...tenant,
-              ...form,
-              monthlyRent:
-                Number(
-                  form.monthlyRent
-                ),
-            }
-          : tenant
-      )
-    );
-  } else {
-    setTenants([
-      ...tenants,
-      {
-        ...form,
-        id: Date.now().toString(),
-        monthlyRent:
-          Number(form.monthlyRent),
-      },
-    ]);
-  }
-
-  // Update room status
-  setRooms(
-    rooms.map((room) => {
-      // If editing and tenant changed rooms,
-      // make the old room vacant
-      if (
-        oldTenant &&
-        oldTenant.roomId !== form.roomId &&
-        room.id === oldTenant.roomId
-      ) {
-        return {
-          ...room,
-          status: "Vacant",
-        };
-      }
-
-      // New/current assigned room becomes occupied
-      if (room.id === form.roomId) {
-        return {
-          ...room,
-          status: "Occupied",
-        };
-      }
-
-      return room;
-    })
-  );
-
-  setForm(empty);
-  setEditing(null);
-  setShowForm(false);
-}
 
   function edit(tenant) {
     setForm({
@@ -1207,38 +1407,43 @@ useEffect(() => {
     setShowForm(true);
   }
 
- function remove(id) {
-  if (
-    window.confirm(
-      "Delete this tenant?"
-    )
-  ) {
-    const tenant = tenants.find(
-      (t) => t.id === id
-    );
-
-    // Delete tenant
-    setTenants(
-      tenants.filter(
-        (t) => t.id !== id
+  function remove(id) {
+    if (
+      window.confirm(
+        "Delete this tenant?"
       )
-    );
+    ) {
+      const tenant =
+        tenants.find(
+          (t) => t.id === id
+        );
 
-    // Make the tenant's room vacant
-    if (tenant?.roomId) {
-      setRooms(
-        rooms.map((room) =>
-          room.id === tenant.roomId
-            ? {
-                ...room,
-                status: "Vacant",
-              }
-            : room
+      /*
+       * Remove tenant.
+       */
+      setTenants(
+        tenants.filter(
+          (t) => t.id !== id
         )
       );
+
+      /*
+       * Free their room.
+       */
+      if (tenant?.roomId) {
+        setRooms(
+          rooms.map((room) =>
+            room.id === tenant.roomId
+              ? {
+                  ...room,
+                  status: "Vacant",
+                }
+              : room
+          )
+        );
+      }
     }
   }
-}
 
   const filtered = tenants.filter(
     (tenant) =>
@@ -1259,6 +1464,7 @@ useEffect(() => {
       <div className="page-heading">
         <div>
           <h2>Tenant Management</h2>
+
           <p>
             Add tenants and assign rooms.
           </p>
@@ -1266,9 +1472,11 @@ useEffect(() => {
 
         <button
           className="primary-button"
-          onClick={() =>
-            setShowForm(true)
-          }
+          onClick={() => {
+            setEditing(null);
+            setForm(empty);
+            setShowForm(true);
+          }}
         >
           <Plus size={18} />
           Add Tenant
@@ -1304,10 +1512,10 @@ useEffect(() => {
             <Field
               label="Tenant Name"
               value={form.name}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  name: v,
+                  name: value,
                 })
               }
             />
@@ -1315,10 +1523,10 @@ useEffect(() => {
             <Field
               label="Phone"
               value={form.phone}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  phone: v,
+                  phone: value,
                 })
               }
             />
@@ -1326,26 +1534,31 @@ useEffect(() => {
             <Field
               label="Email"
               value={form.email}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  email: v,
+                  email: value,
                 })
               }
             />
 
+            {/* ======================================
+                ROOM DROPDOWN
+                ONLY AVAILABLE ROOMS APPEAR
+            ====================================== */}
+
             <SelectField
               label="Room"
               value={form.roomId}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  roomId: v,
+                  roomId: value,
                   monthlyRent:
-                    roomRent(v),
+                    roomRent(value),
                 })
               }
-              options={rooms.map(
+              options={availableRooms.map(
                 (room) => ({
                   label: `Room ${room.roomNumber} - NPR ${money(
                     room.monthlyRent
@@ -1355,14 +1568,27 @@ useEffect(() => {
               )}
             />
 
+            {availableRooms.length ===
+              0 && (
+              <div
+                style={{
+                  color: "#dc2626",
+                  fontSize: "14px",
+                  paddingTop: "8px",
+                }}
+              >
+                No vacant rooms available.
+              </div>
+            )}
+
             <Field
               label="Monthly Rent"
               type="number"
               value={form.monthlyRent}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  monthlyRent: v,
+                  monthlyRent: value,
                 })
               }
             />
@@ -1371,10 +1597,10 @@ useEffect(() => {
               label="Rent Due Day"
               type="number"
               value={form.dueDay}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  dueDay: v,
+                  dueDay: value,
                 })
               }
             />
@@ -1383,10 +1609,10 @@ useEffect(() => {
               label="Start Date"
               type="date"
               value={form.startDate}
-              onChange={(v) =>
+              onChange={(value) =>
                 setForm({
                   ...form,
-                  startDate: v,
+                  startDate: value,
                 })
               }
             />
@@ -1396,9 +1622,17 @@ useEffect(() => {
             <button
               className="primary-button"
               type="submit"
+              disabled={
+                availableRooms.length ===
+                  0 &&
+                !editing
+              }
             >
               <Save size={18} />
-              Save Tenant
+
+              {editing
+                ? "Update Tenant"
+                : "Save Tenant"}
             </button>
 
             <button
@@ -1420,6 +1654,7 @@ useEffect(() => {
         <div className="table-header">
           <div>
             <h3>Tenants</h3>
+
             <p>
               {tenants.length} tenant
               {tenants.length !== 1
@@ -1435,7 +1670,9 @@ useEffect(() => {
               placeholder="Search tenant..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
             />
           </div>
@@ -1465,8 +1702,8 @@ useEffect(() => {
                   (tenant) => {
                     const room =
                       rooms.find(
-                        (r) =>
-                          r.id ===
+                        (room) =>
+                          room.id ===
                           tenant.roomId
                       );
 
@@ -1480,6 +1717,7 @@ useEffect(() => {
                           <strong>
                             {tenant.name}
                           </strong>
+
                           <small>
                             {tenant.email ||
                               ""}
@@ -1586,6 +1824,7 @@ function PaymentsPage() {
       alert(
         "Select tenant and enter amount."
       );
+
       return;
     }
 
@@ -1613,6 +1852,7 @@ function PaymentsPage() {
       <div className="page-heading">
         <div>
           <h2>Payments</h2>
+
           <p>
             Record rent payments from tenants.
           </p>
@@ -1634,10 +1874,10 @@ function PaymentsPage() {
           <SelectField
             label="Tenant"
             value={form.tenantId}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                tenantId: v,
+                tenantId: value,
               })
             }
             options={tenants.map(
@@ -1652,10 +1892,10 @@ function PaymentsPage() {
             label="Payment Amount"
             type="number"
             value={form.amount}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                amount: v,
+                amount: value,
               })
             }
           />
@@ -1664,10 +1904,10 @@ function PaymentsPage() {
             label="Payment Date"
             type="date"
             value={form.date}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                date: v,
+                date: value,
               })
             }
           />
@@ -1675,10 +1915,10 @@ function PaymentsPage() {
           <Field
             label="Note"
             value={form.note}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                note: v,
+                note: value,
               })
             }
           />
@@ -1787,15 +2027,15 @@ function InvoicesPage() {
       const previousPayments =
         payments
           .filter(
-            (p) =>
-              p.tenantId ===
+            (payment) =>
+              payment.tenantId ===
               tenant.id
           )
           .reduce(
-            (sum, p) =>
+            (sum, payment) =>
               sum +
               Number(
-                p.amount || 0
+                payment.amount || 0
               ),
             0
           );
@@ -1824,6 +2064,7 @@ function InvoicesPage() {
       <div className="page-heading">
         <div>
           <h2>Monthly Invoices</h2>
+
           <p>
             Current rent invoice and
             outstanding balance.
@@ -1987,7 +2228,10 @@ function ExpensesPage() {
   function submit(e) {
     e.preventDefault();
 
-    if (!form.title || !form.amount) {
+    if (
+      !form.title ||
+      !form.amount
+    ) {
       return;
     }
 
@@ -2017,7 +2261,8 @@ function ExpensesPage() {
     ) {
       setExpenses(
         expenses.filter(
-          (e) => e.id !== id
+          (expense) =>
+            expense.id !== id
         )
       );
     }
@@ -2028,6 +2273,7 @@ function ExpensesPage() {
       <div className="page-heading">
         <div>
           <h2>Expenses</h2>
+
           <p>
             Record property expenses.
           </p>
@@ -2049,10 +2295,10 @@ function ExpensesPage() {
           <Field
             label="Expense"
             value={form.title}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                title: v,
+                title: value,
               })
             }
           />
@@ -2061,10 +2307,10 @@ function ExpensesPage() {
             label="Amount"
             type="number"
             value={form.amount}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                amount: v,
+                amount: value,
               })
             }
           />
@@ -2073,10 +2319,10 @@ function ExpensesPage() {
             label="Date"
             type="date"
             value={form.date}
-            onChange={(v) =>
+            onChange={(value) =>
               setForm({
                 ...form,
-                date: v,
+                date: value,
               })
             }
           />
@@ -2184,15 +2430,17 @@ function ReportsPage() {
   );
 
   const income = payments.reduce(
-    (sum, p) =>
-      sum + Number(p.amount || 0),
+    (sum, payment) =>
+      sum +
+      Number(payment.amount || 0),
     0
   );
 
   const expenseTotal =
     expenses.reduce(
-      (sum, e) =>
-        sum + Number(e.amount || 0),
+      (sum, expense) =>
+        sum +
+        Number(expense.amount || 0),
       0
     );
 
@@ -2212,6 +2460,7 @@ function ReportsPage() {
       <div className="page-heading">
         <div>
           <h2>Reports</h2>
+
           <p>
             Financial overview.
           </p>
@@ -2265,6 +2514,7 @@ function ReportsPage() {
         <div className="detail-list">
           <div>
             <span>Tenants</span>
+
             <strong>
               {tenants.length}
             </strong>
@@ -2272,6 +2522,7 @@ function ReportsPage() {
 
           <div>
             <span>Total Payments</span>
+
             <strong>
               NPR {money(income)}
             </strong>
@@ -2279,6 +2530,7 @@ function ReportsPage() {
 
           <div>
             <span>Total Expenses</span>
+
             <strong>
               NPR {money(expenseTotal)}
             </strong>
@@ -2286,6 +2538,7 @@ function ReportsPage() {
 
           <div>
             <span>Net Income</span>
+
             <strong>
               NPR{" "}
               {money(
@@ -2297,6 +2550,7 @@ function ReportsPage() {
 
           <div>
             <span>Outstanding Rent</span>
+
             <strong className="danger-text">
               NPR {money(outstanding)}
             </strong>
@@ -2337,7 +2591,13 @@ function SettingsPage() {
     };
 
     const blob = new Blob(
-      [JSON.stringify(data, null, 2)],
+      [
+        JSON.stringify(
+          data,
+          null,
+          2
+        ),
+      ],
       {
         type: "application/json",
       }
@@ -2350,6 +2610,7 @@ function SettingsPage() {
       document.createElement("a");
 
     a.href = url;
+
     a.download =
       "rent-manager-backup.json";
 
@@ -2366,7 +2627,9 @@ function SettingsPage() {
     ) {
       Object.values(STORAGE).forEach(
         (key) =>
-          localStorage.removeItem(key)
+          localStorage.removeItem(
+            key
+          )
       );
 
       localStorage.removeItem(
@@ -2382,6 +2645,7 @@ function SettingsPage() {
       <div className="page-heading">
         <div>
           <h2>Settings</h2>
+
           <p>
             Backup and application settings.
           </p>
@@ -2462,14 +2726,16 @@ function getTenantBalance(
   const paid =
     payments
       .filter(
-        (p) =>
-          p.tenantId ===
+        (payment) =>
+          payment.tenantId ===
           tenant.id
       )
       .reduce(
-        (sum, p) =>
+        (sum, payment) =>
           sum +
-          Number(p.amount || 0),
+          Number(
+            payment.amount || 0
+          ),
         0
       );
 
@@ -2495,6 +2761,7 @@ function Stat({
 
       <div>
         <span>{title}</span>
+
         <strong>{value}</strong>
       </div>
     </div>
@@ -2519,7 +2786,9 @@ function Field({
           type={type}
           value={value || ""}
           onChange={(e) =>
-            onChange(e.target.value)
+            onChange(
+              e.target.value
+            )
           }
         />
       </div>
@@ -2541,7 +2810,9 @@ function SelectField({
         <select
           value={value}
           onChange={(e) =>
-            onChange(e.target.value)
+            onChange(
+              e.target.value
+            )
           }
         >
           <option value="">
@@ -2580,6 +2851,7 @@ function Empty({
   return (
     <div className="empty-state">
       {icon}
+
       <p>{text}</p>
     </div>
   );
