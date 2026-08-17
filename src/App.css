@@ -2,19 +2,30 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
-  font-family:
-    Inter,
-    Arial,
-    sans-serif;
+  font-family: Inter, Arial, sans-serif;
   background: #f1f5f9;
   color: #0f172a;
+  overflow-x: hidden;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -22,33 +33,32 @@ button {
   cursor: pointer;
 }
 
-/* LOGIN */
+img,
+svg {
+  max-width: 100%;
+}
+
+/* =========================
+   LOGIN
+========================= */
 
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #0f172a,
-      #1d4ed8,
-      #2563eb
-    );
+  background: linear-gradient(135deg, #0f172a, #1d4ed8, #2563eb);
 }
 
 .login-card {
-  width: 100%;
-  max-width: 420px;
+  width: min(100%, 420px);
   background: white;
   padding: 40px;
   border-radius: 20px;
-  box-shadow:
-    0 25px 60px
-    rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
   text-align: center;
 }
 
@@ -60,23 +70,20 @@ button {
   place-items: center;
   border-radius: 18px;
   color: white;
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #4f46e5
-    );
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
 }
 
 .login-card h1 {
   margin: 0;
   font-size: 28px;
+  line-height: 1.2;
 }
 
 .login-subtitle {
   color: #64748b;
   margin: 8px 0 30px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .login-card form {
@@ -85,7 +92,7 @@ button {
 
 .login-button {
   width: 100%;
-  height: 48px;
+  min-height: 48px;
   border: 0;
   border-radius: 10px;
   background: #2563eb;
@@ -117,34 +124,47 @@ button {
   font-size: 13px;
 }
 
-/* APP */
+/* =========================
+   APP LAYOUT
+========================= */
 
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   display: flex;
+  overflow-x: hidden;
 }
 
 .sidebar {
   width: 250px;
+  min-width: 250px;
   flex-shrink: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #0f172a;
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s;
+  transition: width 0.2s ease, min-width 0.2s ease;
+  overflow: hidden;
 }
 
 .sidebar.closed {
   width: 72px;
+  min-width: 72px;
 }
 
 .logo {
   height: 80px;
+  min-height: 80px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 15px 20px;
   border-bottom: 1px solid #1e293b;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .logo h2 {
@@ -160,10 +180,13 @@ button {
 .sidebar nav {
   padding: 15px 10px;
   flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .nav-item {
   width: 100%;
+  min-width: 0;
   height: 45px;
   margin-bottom: 5px;
   border: 0;
@@ -176,6 +199,9 @@ button {
   gap: 12px;
   padding: 0 12px;
   text-align: left;
+
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-item:hover {
@@ -190,7 +216,7 @@ button {
 
 .logout-button {
   margin: 10px;
-  height: 45px;
+  min-height: 45px;
   border: 0;
   border-radius: 8px;
   background: #1e293b;
@@ -200,6 +226,9 @@ button {
   align-items: center;
   gap: 12px;
   padding: 0 12px;
+
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .logout-button:hover {
@@ -210,22 +239,29 @@ button {
 .main {
   min-width: 0;
   flex: 1;
+  width: 0;
 }
 
+/* =========================
+   TOPBAR
+========================= */
+
 .topbar {
-  height: 80px;
+  min-height: 80px;
   background: white;
   border-bottom: 1px solid #e2e8f0;
 
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 0 25px;
+  padding: 15px 25px;
 }
 
 .topbar h1 {
   margin: 0;
   font-size: 22px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .topbar p {
@@ -236,6 +272,7 @@ button {
 
 .menu-button {
   width: 40px;
+  min-width: 40px;
   height: 40px;
   border: 0;
   border-radius: 8px;
@@ -244,18 +281,27 @@ button {
   place-items: center;
 }
 
+/* =========================
+   CONTENT
+========================= */
+
 .content {
+  width: 100%;
   padding: 25px;
 }
 
 .page {
+  width: 100%;
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
 }
 
-/* HEADERS */
+/* =========================
+   HEADERS
+========================= */
 
 .page-heading {
+  width: 100%;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -265,21 +311,31 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
+}
+
+.page-heading > * {
+  min-width: 0;
 }
 
 .page-heading h2 {
   margin: 0 0 5px;
+  overflow-wrap: anywhere;
 }
 
 .page-heading p {
   margin: 0;
   color: #64748b;
   font-size: 13px;
+  line-height: 1.5;
 }
 
-/* WELCOME */
+/* =========================
+   WELCOME
+========================= */
 
 .welcome-card {
+  width: 100%;
   padding: 25px;
   border-radius: 15px;
   margin-bottom: 20px;
@@ -288,35 +344,40 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #4f46e5
-    );
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+}
+
+.welcome-card > div {
+  min-width: 0;
 }
 
 .welcome-card h2 {
   margin: 0 0 7px;
+  overflow-wrap: anywhere;
 }
 
 .welcome-card p {
   margin: 0;
   opacity: 0.9;
+  line-height: 1.5;
 }
 
-/* STATS */
+/* =========================
+   STATS
+========================= */
 
 .stats-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns:
-    repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .stat-card {
+  min-width: 0;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 13px;
@@ -329,6 +390,7 @@ button {
 
 .stat-icon {
   width: 45px;
+  min-width: 45px;
   height: 45px;
   border-radius: 10px;
   display: grid;
@@ -360,18 +422,24 @@ button {
   color: #64748b;
   font-size: 12px;
   margin-bottom: 5px;
+  overflow-wrap: anywhere;
 }
 
 .stat-card strong {
   display: block;
   font-size: 17px;
+  overflow-wrap: anywhere;
 }
 
-/* CARDS */
+/* =========================
+   CARDS
+========================= */
 
 .card,
 .form-card,
 .table-card {
+  width: 100%;
+  min-width: 0;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -382,12 +450,13 @@ button {
 .form-card h3,
 .table-card h3 {
   margin-top: 0;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns:
-    repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -399,6 +468,7 @@ button {
 .detail-list div {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 15px;
   padding: 13px 0;
   border-bottom: 1px solid #f1f5f9;
@@ -416,6 +486,7 @@ button {
 .detail-list strong {
   text-align: right;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .empty-state {
@@ -426,26 +497,30 @@ button {
   align-items: center;
   color: #94a3b8;
   text-align: center;
+  padding: 20px;
 }
 
 .empty-state p {
   margin: 12px 0 0;
 }
 
-/* FORMS */
+/* =========================
+   FORMS
+========================= */
 
 .form-card {
   margin-bottom: 20px;
 }
 
 .form-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns:
-    repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
 .form-group {
+  min-width: 0;
   margin-bottom: 16px;
 }
 
@@ -459,6 +534,8 @@ button {
 
 .input-wrapper,
 .select-wrapper {
+  width: 100%;
+  min-width: 0;
   height: 47px;
   border: 1px solid #cbd5e1;
   border-radius: 9px;
@@ -474,16 +551,23 @@ button {
   border-color: #2563eb;
 }
 
-.input-wrapper input {
+.input-wrapper input,
+.input-wrapper textarea {
   width: 100%;
+  min-width: 0;
   height: 100%;
   border: 0;
   outline: 0;
   background: transparent;
 }
 
+.input-wrapper input[type="number"] {
+  min-width: 0;
+}
+
 .select-wrapper select {
   width: 100%;
+  min-width: 0;
   border: 0;
   outline: 0;
   background: transparent;
@@ -492,11 +576,13 @@ button {
 .form-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
 }
 
 .primary-button {
+  min-height: 42px;
   border: 0;
   border-radius: 9px;
   background: #2563eb;
@@ -505,6 +591,7 @@ button {
 
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
 
   font-weight: 600;
@@ -515,6 +602,7 @@ button {
 }
 
 .secondary-button {
+  min-height: 42px;
   border: 1px solid #cbd5e1;
   border-radius: 9px;
   background: white;
@@ -530,10 +618,16 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 15px;
+}
+
+.form-card-title > * {
+  min-width: 0;
 }
 
 .icon-button {
   width: 35px;
+  min-width: 35px;
   height: 35px;
   border: 0;
   border-radius: 8px;
@@ -557,7 +651,9 @@ button {
   line-height: 1.6;
 }
 
-/* TABLE */
+/* =========================
+   TABLE
+========================= */
 
 .table-card {
   margin-bottom: 20px;
@@ -568,7 +664,12 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 15px;
   margin-bottom: 15px;
+}
+
+.table-header > * {
+  min-width: 0;
 }
 
 .table-header h3 {
@@ -583,7 +684,9 @@ button {
 
 .search-box {
   width: 230px;
+  max-width: 100%;
   height: 40px;
+  flex-shrink: 0;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   display: flex;
@@ -595,12 +698,18 @@ button {
 
 .search-box input {
   width: 100%;
+  min-width: 0;
   border: 0;
   outline: 0;
+  background: transparent;
 }
 
 .table-scroll {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -616,6 +725,7 @@ th {
   text-align: left;
   padding: 13px;
   border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
 td {
@@ -623,6 +733,7 @@ td {
   font-size: 13px;
   color: #475569;
   border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
 }
 
 td strong {
@@ -638,10 +749,12 @@ td small {
 .actions {
   display: flex;
   gap: 7px;
+  flex-wrap: nowrap;
 }
 
 .small-button {
   width: 34px;
+  min-width: 34px;
   height: 34px;
   border-radius: 7px;
   display: grid;
@@ -667,6 +780,7 @@ td small {
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .badge.green {
@@ -679,15 +793,19 @@ td small {
   color: #c2410c;
 }
 
-/* INVOICES */
+/* =========================
+   INVOICES
+========================= */
 
 .invoice-info {
+  width: 100%;
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   padding: 15px;
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -700,16 +818,18 @@ td small {
 .invoice-info span {
   margin-top: 3px;
   font-size: 12px;
+  line-height: 1.5;
 }
 
 .invoice-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns:
-    repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
 .invoice-card {
+  min-width: 0;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -719,6 +839,8 @@ td small {
 .invoice-top {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
   color: #2563eb;
   margin-bottom: 20px;
 }
@@ -731,12 +853,14 @@ td small {
 .invoice-top h3 {
   margin: 4px 0 0;
   color: #0f172a;
+  overflow-wrap: anywhere;
 }
 
 .invoice-line,
 .invoice-total {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 15px;
   padding: 11px 0;
   border-bottom: 1px solid #f1f5f9;
@@ -746,6 +870,12 @@ td small {
 .invoice-line span,
 .invoice-total span {
   color: #64748b;
+}
+
+.invoice-line strong,
+.invoice-total strong {
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .invoice-total {
@@ -791,12 +921,14 @@ td small {
   margin-left: 5px;
 }
 
-/* SETTINGS */
+/* =========================
+   SETTINGS
+========================= */
 
 .settings-grid {
+  width: 100%;
   display: grid;
-  grid-template-columns:
-    repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -805,14 +937,18 @@ td small {
 }
 
 .danger-button {
+  min-height: 42px;
   border: 0;
   border-radius: 9px;
   background: #dc2626;
   color: white;
   padding: 11px 17px;
+
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
+
   font-weight: 600;
 }
 
@@ -820,40 +956,45 @@ td small {
   background: #b91c1c;
 }
 
-/* MOBILE */
+/* =========================
+   LARGE WINDOWS / LAPTOP
+========================= */
 
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
+  .content {
+    padding: 20px;
+  }
+
   .stats-grid {
-    grid-template-columns:
-      repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .invoice-grid {
-    grid-template-columns:
-      repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 750px) {
+/* =========================
+   TABLET / SMALL LAPTOP
+========================= */
+
+@media (max-width: 900px) {
   .sidebar {
     width: 72px;
+    min-width: 72px;
   }
 
   .sidebar.open {
     width: 230px;
+    min-width: 230px;
   }
 
   .content {
-    padding: 15px;
-  }
-
-  .topbar {
-    padding: 0 15px;
+    padding: 18px;
   }
 
   .dashboard-grid,
-  .settings-grid,
-  .invoice-grid {
+  .settings-grid {
     grid-template-columns: 1fr;
   }
 
@@ -861,39 +1002,126 @@ td small {
     grid-template-columns: 1fr;
   }
 
-  .page-heading {
-    align-items: flex-start;
-    gap: 15px;
-  }
-
-  .search-box {
-    width: 180px;
+  .invoice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 500px) {
-  .login-card {
-    padding: 30px 20px;
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+  .app {
+    display: block;
+    position: relative;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .sidebar {
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    bottom: 0;
+
+    width: 0;
+    min-width: 0;
+    transform: translateX(-100%);
+    transition:
+      transform 0.2s ease,
+      width 0.2s ease;
+  }
+
+  .sidebar.open {
+    width: 250px;
+    min-width: 250px;
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(15, 23, 42, 0.25);
+  }
+
+  .main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .topbar {
+    min-height: 68px;
+    padding: 12px 15px;
+    gap: 10px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .topbar p {
+    font-size: 11px;
+  }
+
+  .content {
+    padding: 14px;
+  }
+
+  .page-heading {
+    padding: 17px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .page-heading .primary-button,
+  .page-heading .secondary-button {
+    width: 100%;
   }
 
   .welcome-card {
     padding: 20px;
+    align-items: flex-start;
   }
 
   .welcome-card svg {
     display: none;
   }
 
-  .page-heading {
-    flex-direction: column;
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
-  .page-heading > svg {
-    display: none;
+  .stat-card {
+    padding: 14px;
+    gap: 9px;
+  }
+
+  .stat-icon {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+
+  .stat-card strong {
+    font-size: 15px;
+  }
+
+  .card,
+  .form-card,
+  .table-card {
+    padding: 16px;
+  }
+
+  .dashboard-grid,
+  .settings-grid,
+  .invoice-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    width: 100%;
+  }
+
+  .form-actions button {
+    flex: 1;
+    min-width: 130px;
   }
 
   .table-header {
@@ -905,4 +1133,193 @@ td small {
   .search-box {
     width: 100%;
   }
+
+  .invoice-info {
+    padding: 13px;
+  }
+}
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media (max-width: 500px) {
+  .login-page {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .login-card {
+    padding: 28px 18px;
+    border-radius: 16px;
+  }
+
+  .login-logo {
+    width: 65px;
+    height: 65px;
+  }
+
+  .login-card h1 {
+    font-size: 24px;
+  }
+
+  .login-subtitle {
+    margin-bottom: 22px;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  .topbar {
+    padding: 10px;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+  }
+
+  .topbar p {
+    font-size: 10px;
+  }
+
+  .page-heading {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .page-heading h2 {
+    font-size: 19px;
+  }
+
+  .welcome-card {
+    padding: 17px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-card h2 {
+    font-size: 19px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .card,
+  .form-card,
+  .table-card,
+  .invoice-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .detail-list div {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .detail-list strong {
+    text-align: left;
+  }
+
+  .form-card-title {
+    align-items: flex-start;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions button,
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    width: 100%;
+  }
+
+  .invoice-line,
+  .invoice-total {
+    gap: 10px;
+  }
+
+  .table-card {
+    overflow: hidden;
+  }
+
+  .table-scroll {
+    margin-left: -14px;
+    margin-right: -14px;
+    width: calc(100% + 28px);
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* =========================
+   VERY SMALL PHONES
+========================= */
+
+@media (max-width: 360px) {
+  .login-card {
+    padding: 24px 14px;
+  }
+
+  .content {
+    padding: 8px;
+  }
+
+  .topbar {
+    min-height: 62px;
+  }
+
+  .topbar h1 {
+    font-size: 15px;
+  }
+
+  .menu-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .card,
+  .form-card,
+  .table-card,
+  .invoice-card {
+    padding: 12px;
+  }
+
+  .page-heading {
+    padding: 12px;
+  }
+}
+
+/* =========================
+   ACCESSIBILITY / TOUCH
+========================= */
+
+@media (hover: none) {
+  button,
+  .nav-item,
+  .small-button,
+  .icon-button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Prevent accidental horizontal scrolling from long content */
+.page,
+.card,
+.form-card,
+.table-card,
+.invoice-card,
+.stat-card,
+.page-heading,
+.welcome-card {
+  overflow-wrap: anywhere;
 }
