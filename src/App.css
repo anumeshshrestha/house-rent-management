@@ -1203,3 +1203,276 @@ td small {
     padding: 11px;
   }
 }
+
+/* =========================
+   STANDARD FONT SIZES
+========================= */
+
+body {
+  font-size: 14px;
+}
+
+/* Top bar */
+
+.topbar h1 {
+  font-size: 20px;
+}
+
+.topbar p {
+  font-size: 12px;
+}
+
+/* Page headings */
+
+.page-heading h2 {
+  font-size: 20px;
+}
+
+.page-heading p {
+  font-size: 12px;
+}
+
+/* Welcome */
+
+.welcome-card h2 {
+  font-size: 20px;
+}
+
+.welcome-card p {
+  font-size: 13px;
+}
+
+/* Cards */
+
+.card h3,
+.form-card h3,
+.table-card h3 {
+  font-size: 16px;
+}
+
+/* Statistics */
+
+.stat-card span {
+  font-size: 11px;
+}
+
+.stat-card strong {
+  font-size: 15px;
+}
+
+/* Forms */
+
+.form-group label {
+  font-size: 12px;
+}
+
+.input-wrapper input,
+.select-wrapper select {
+  font-size: 13px;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  font-size: 13px;
+}
+
+/* Tables */
+
+th {
+  font-size: 11px;
+}
+
+td {
+  font-size: 12px;
+}
+
+td small {
+  font-size: 10px;
+}
+
+/* Search */
+
+.search-box input {
+  font-size: 13px;
+}
+
+/* Badges */
+
+.badge {
+  font-size: 10px;
+}
+
+/* Invoices */
+
+.invoice-top h3 {
+  font-size: 16px;
+}
+
+.invoice-line,
+.invoice-total {
+  font-size: 12px;
+}
+
+.invoice-total {
+  font-size: 14px;
+}
+
+.overdue-label,
+.paid-label {
+  font-size: 11px;
+}
+
+.invoice-info strong {
+  font-size: 13px;
+}
+
+.invoice-info span {
+  font-size: 11px;
+}
+
+/* General text */
+
+.muted {
+  font-size: 12px;
+}
+
+.detail-list span,
+.detail-list strong {
+  font-size: 12px;
+}
+
+/* Login */
+
+.login-card h1 {
+  font-size: 26px;
+}
+
+.login-subtitle {
+  font-size: 13px;
+}
+
+.login-help {
+  font-size: 11px;
+}
+
+.login-error {
+  font-size: 12px;
+}
+
+
+/* =========================
+   MOBILE STANDARD SIZE
+========================= */
+
+@media (max-width: 750px) {
+  .topbar h1 {
+    font-size: 17px;
+  }
+
+  .page-heading h2 {
+    font-size: 18px;
+  }
+
+  .welcome-card h2 {
+    font-size: 18px;
+  }
+
+  .welcome-card p {
+    font-size: 12px;
+  }
+
+  .card h3,
+  .form-card h3,
+  .table-card h3 {
+    font-size: 15px;
+  }
+
+  .stat-card span {
+    font-size: 10px;
+  }
+
+  .stat-card strong {
+    font-size: 13px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+  }
+
+  .input-wrapper input,
+  .select-wrapper select {
+    font-size: 13px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    font-size: 12px;
+  }
+
+  th {
+    font-size: 10px;
+  }
+
+  td {
+    font-size: 11px;
+  }
+
+  .invoice-top h3 {
+    font-size: 15px;
+  }
+
+  .invoice-line,
+  .invoice-total {
+    font-size: 12px;
+  }
+
+  .muted {
+    font-size: 11px;
+  }
+}
+
+
+/* =========================
+   SMALL PHONE
+========================= */
+
+@media (max-width: 500px) {
+  .topbar h1 {
+    font-size: 16px;
+  }
+
+  .page-heading h2 {
+    font-size: 17px;
+  }
+
+  .welcome-card h2 {
+    font-size: 17px;
+  }
+
+  .stat-card strong {
+    font-size: 12px;
+  }
+
+  .stat-card span {
+    font-size: 9px;
+  }
+
+  .card h3,
+  .form-card h3,
+  .table-card h3 {
+    font-size: 14px;
+  }
+
+  .input-wrapper input,
+  .select-wrapper select {
+    font-size: 12px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    font-size: 12px;
+  }
+}
